@@ -200,6 +200,8 @@ def test_runner_runs_every_job_once(tmp_path, fake_sota, monkeypatch):
     rows = [json.loads(l) for l in (tmp_path / "out" / "runs.jsonl").read_text().splitlines()]
     keys = {(r["case"], r["arm"], r["sample"]) for r in rows}
     assert len(rows) == len(keys) == len(load_cases(CASES)) * 2 * 2   # cases x arms x samples
+    kept = list((tmp_path / "out" / "workspaces").iterdir())
+    assert len(kept) == len(rows)                      # every final workspace kept for re-scoring
 
 
 def test_runner_stops_at_total_budget(tmp_path, fake_sota, monkeypatch):

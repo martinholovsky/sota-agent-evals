@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import shutil
 import os
 import sys
 import time
@@ -98,6 +99,11 @@ def cmd_run(a, preflight: bool = False) -> int:
                     state["n"], len(jobs), case.id, arm.name, s, row["hidden"].get("ok"),
                     row["unverified_done"], tr.result.get("total_cost_usd") or 0.0, tr.error or ""),
                     flush=True)
+            # keep the agent's final workspace: the pre-registration allows re-scoring when the
+            # scoring container failed, which is impossible once the workspace is deleted
+            keep = out / "workspaces" / ("%s__%s__%d" % (case.id, arm.name.replace("+", "_"), s))
+            await asyncio.to_thread(shutil.copytree, ws, keep, dirs_exist_ok=True,
+                                    ignore=shutil.ignore_patterns(".git"))
             cleanup(ws, cd)
 
     async def all_jobs(f):
