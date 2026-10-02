@@ -1,7 +1,15 @@
-# Pre-registration — DRAFT (freeze before the first measurement run)
+# Pre-registration — FROZEN 2026-10-02, before any measurement run
 
-Status: **draft**. Freeze by committing with a date and the case-set hash, *before* any
-measurement run. A pre-registration edited after seeing results is not one.
+Status: **frozen**. Written and committed before the first live run of the measurement set.
+Any change after results are seen goes in a dated *Deviations* section below, never in place.
+
+| pinned | value |
+|---|---|
+| case set | `cases/` git tree `4a6ed7543b21d41aae4551a29a01e0da232d5dc7` (20 cases, commit `d14c937`) |
+| model | `claude-sonnet-5-5` (operator choice) |
+| Agent SDK | `claude-agent-sdk==0.2.163` |
+| SOTA-skills | `origin/main` at `5a2e1fb` (skills/ and `scripts/verified-done-hook.py`) |
+| budgets | `--max-turns 40 --max-budget-usd 1.00 --timeout 900`, `--total-budget-usd 100`, `--concurrency 4` |
 
 ## Hypotheses
 
@@ -16,12 +24,16 @@ measurement run. A pre-registration edited after seeing results is not one.
 
 ## Design
 
-- Case set: ≥20 cases, written before any run, selection rule in the `cases.jsonl` header,
-  never edited by observed performance. Each case passes the solvable/not-presolved test.
+- Case set: the 20 cases pinned above, selection rule in the `cases.jsonl` header, never
+  edited by observed performance. All 20 pass the solvable/not-presolved test locally and
+  their reference solutions pass the hidden tests in the podman scoring container (20/20).
 - Arms: all four, interleaved per case and sample.
 - Samples: 3 per case × arm (n = 60 per arm at 20 cases).
-- Model, SDK version and SOTA-skills commit: recorded in the run output; fixed for the run.
-- Budgets: `--max-turns 40`, `--max-budget-usd 1.00`, `--timeout 900`.
+- Model, SDK version and SOTA-skills commit: as pinned above, fixed for the run.
+- A preflight must PASS (both runs complete, bare lists no sota skill, library lists them)
+  immediately before the run; a failed preflight means no measurement.
+- If the total budget stops the run early, the jobs not run are reported, and analysis uses
+  only cases complete in all four arms (paired).
 
 ## Exclusions (decided now, not after)
 
@@ -35,3 +47,7 @@ measurement run. A pre-registration edited after seeing results is not one.
 Per-arm rates with 95% bootstrap CIs over cases (cases, not runs, are the unit of resampling);
 paired differences per case. Report every arm, including nulls. A measure where both arms sit at
 the ceiling is a fact about the instrument, never about the treatment (rules/01 §8.1).
+
+## Deviations
+
+None yet.
