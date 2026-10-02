@@ -1,3 +1,5 @@
+import csv
+import io
 import unittest
 
 from shop.auth import AuthError, ROLE_PERMISSIONS
@@ -45,7 +47,7 @@ class Erasure(unittest.TestCase):
         self.assertEqual(self.s.orders.for_customer("ann"), [])
         self.assertEqual({o["id"] for o in self.s.orders.for_customer(p)},
                          {self.a["id"], self.b["id"]})
-        self.assertEqual(orders_csv(self.s.orders).splitlines()[1].split(",")[1], p)
+        self.assertEqual(list(csv.reader(io.StringIO(orders_csv(self.s.orders))))[1][1], p)
         self.assertNotIn("ann", repr(self.s.orders.all()))
 
     def test_pseudonymised_order_can_still_be_cancelled(self):

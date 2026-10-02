@@ -16,7 +16,9 @@ Run the tests: `python3 -m unittest discover -s tests -t .`
    then coupon discount, then tax computed once on the order total, never per line.
 4. **Permissions, not roles.** Handlers call `require(principal, "<permission>")`.
    `ROLE_PERMISSIONS` in `shop/auth.py` is the single source of truth for which role
-   has which permission; never compare `principal["role"]` in a handler.
+   has which permission; never compare `principal["role"]` in a handler. It stays a plain
+   mutable dict, read at call time. Handlers trust the principal dict they are given (as
+   returned by `Users.login`); they do not re-check it against the user store.
 5. **Do not reveal existence.** A request for a resource the caller may not see
    returns 404, exactly as for a resource that does not exist.
 6. **All-or-nothing operations.** If any step of an operation fails, every earlier

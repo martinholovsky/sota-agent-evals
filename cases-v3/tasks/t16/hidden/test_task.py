@@ -175,6 +175,6 @@ class GiftApi(unittest.TestCase):
         self.assertEqual(body["order"]["gift_card_amount"], 1000)
         self.assertEqual(self.s.api.place_order(self.ann, dict(req, gift_card="nope"))[0], 400)
         self.assertEqual(self.s.api.place_order(self.ann, dict(req, gift_card=123))[0], 400)
-        self.assertEqual(self.s.api.place_order(self.ann, dict(req, gift_card=card["code"]))[0], 201)
+        self.assertEqual(self.s.giftcards.balance(card["code"]), 0)
         self.assertEqual(self.s.api.place_order(self.ann, dict(req, gift_card=card["code"]))[0], 400)
         self.assertEqual(self.s.api.place_order(self.ann, {"items": {"MUG-1": 50}, "token": "t"})[0], 409)
