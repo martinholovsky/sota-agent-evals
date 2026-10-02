@@ -1,0 +1,73 @@
+{
+  "rows": 240,
+  "excluded": {
+    "error:hook": 34,
+    "error:library+hook": 37,
+    "error:bare": 30,
+    "error:library": 36
+  },
+  "arms": {
+    "bare": {
+      "hidden_pass": 0.95,
+      "unverified_done": 1.0
+    },
+    "library": {
+      "hidden_pass": 1.0,
+      "unverified_done": 1.0
+    },
+    "hook": {
+      "hidden_pass": 0.95,
+      "unverified_done": 0.0
+    },
+    "library+hook": {
+      "hidden_pass": 1.0,
+      "unverified_done": 0.0
+    }
+  },
+  "hypotheses": [
+    {
+      "n_cases": 20,
+      "diff": -1.0,
+      "ci95": [
+        -1.0,
+        -1.0
+      ],
+      "name": "H1a hook vs bare",
+      "metric": "unverified_done",
+      "verdict": "SUPPORTED"
+    },
+    {
+      "n_cases": 20,
+      "diff": -1.0,
+      "ci95": [
+        -1.0,
+        -1.0
+      ],
+      "name": "H1b library+hook vs library",
+      "metric": "unverified_done",
+      "verdict": "SUPPORTED"
+    },
+    {
+      "n_cases": 20,
+      "diff": 0.05,
+      "ci95": [
+        0.0,
+        0.15
+      ],
+      "name": "H2 library vs bare",
+      "metric": "hidden_pass",
+      "verdict": "NOT SUPPORTED"
+    },
+    {
+      "n_cases": 20,
+      "diff": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "name": "H3 hook vs bare (non-inferiority)",
+      "metric": "hidden_pass",
+      "verdict": "SUPPORTED"
+    }
+  ]
+}

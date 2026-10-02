@@ -78,7 +78,8 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
   and a frozen [pre-registration](PRE-REGISTRATION.md).
 - Harness tests: 22, each scorer shown a known-good and a known-bad. Container scoring verified
   on c01 (reference passes 3/3, untouched start fails).
-- Not yet run against the live API.
+- **First live run, 2026-10-02: compromised** (credit outage, saturated cases) — see
+  [reports/2026-10-02/REPORT.md](reports/2026-10-02/REPORT.md).
 
 ## Licence
 

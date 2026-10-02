@@ -90,4 +90,8 @@ Pilot pass rates were not inspected for this decision. Measurement invocation ca
 
 ## Deviations
 
-None yet.
+- **2026-10-02, measurement run — compromised.** 137/240 rows errored with OpenRouter 402 (the
+  account, not the key, ran out of credit: $2.47 left). Per the exclusions above they are
+  excluded, but unevenly, and `hidden_pass` saturated at 0.95–1.00 in every arm. Reported in
+  `reports/2026-10-02/REPORT.md` as **not a valid measurement of H1–H3**; this pre-registration
+  is closed, and the next run gets a new one.

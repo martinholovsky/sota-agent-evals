@@ -41,6 +41,22 @@ def _key(required: bool, provider: str = "anthropic") -> str:
     return k or "dry-run-no-key"
 
 
+def openrouter_remaining(key: str) -> float | None:
+    """ACCOUNT credit left (GET /api/v1/credits: total_credits - total_usage). The key's own
+    usage is not the binding constraint: other keys on the same account spend the same credit.
+    Measured 2026-10-02 — a $50 cap with $2.47 left on the account; 137 of 240 runs got 402."""
+    import urllib.request
+    req = urllib.request.Request("https://openrouter.ai/api/v1/credits",
+                                 headers={"Authorization": "Bearer " + key})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            d = json.load(r)["data"]
+            return float(d["total_credits"]) - float(d["total_usage"])
+    except Exception as e:
+        print("openrouter credit check failed: %r" % (e,), file=sys.stderr)
+        return None
+
+
 def openrouter_usage(key: str) -> float | None:
     """Cumulative USD spent on this OpenRouter key (GET /api/v1/key -> data.usage). The SDK's
     total_cost_usd is estimated from Anthropic's price list, so it is not the budget of record
@@ -111,6 +127,12 @@ def cmd_run(a, preflight: bool = False) -> int:
     base_usage = openrouter_usage(key) if a.provider == "openrouter" else None
     if a.provider == "openrouter" and base_usage is None:
         raise SystemExit("cannot read OpenRouter usage — refusing to run without the budget of record")
+    if a.provider == "openrouter" and not preflight:
+        left = openrouter_remaining(key)
+        if left is None or left < a.total_budget_usd:
+            raise SystemExit("OpenRouter account credit left: %s, below --total-budget-usd %.2f — "
+                             "top up or lower the cap; a run that starves mid-way is unanalysable"
+                             % ("unknown" if left is None else "$%.2f" % left, a.total_budget_usd))
 
     def spent_now():
         if base_usage is None:
