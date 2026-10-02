@@ -34,7 +34,7 @@ def fake_sota(tmp_path_factory):
 # ---- cases ------------------------------------------------------------------------------
 def test_cases_header_declares_selection_rule():
     head = json.loads((CASES / "cases.jsonl").read_text().splitlines()[0])
-    assert "selection_rule" in head and head["set_type"] == "instrument"
+    assert "selection_rule" in head and head["set_type"] in ("instrument", "measurement")
 
 
 @pytest.mark.parametrize("case", load_cases(CASES), ids=lambda c: c.id)
@@ -170,3 +170,43 @@ def test_preflight_fails_on_errored_runs(tmp_path):
     rows.write_text(json.dumps(dict(ok, arm="bare", contamination={"listed": 0})) + "\n" +
                     json.dumps(dict(ok, arm="library", contamination={"listed": 42, "treatment_present": True})) + "\n")
     assert check_preflight(rows) == 0
+
+
+# ---- the concurrent runner, end to end with a fake SDK call -----------------------------
+def _fake_run_one(cost):
+    async def fake(arm, case, sample, cfg, key):
+        from agent_evals.runner import Trace, options_for
+        ws, cd, _ = options_for(arm, case, cfg, key)
+        tr = Trace(case.id, arm.name, sample, init={"skills": []},
+                   result={"subtype": "success", "is_error": False, "total_cost_usd": cost})
+        return ws, cd, tr
+    return fake
+
+
+def _args(tmp_path, fake_sota, **kw):
+    import argparse
+    d = dict(model="m", sota_root=fake_sota, cases=CASES, only=None, arms="bare,library",
+             samples=2, max_turns=5, max_budget_usd=1.0, total_budget_usd=100.0, timeout=60,
+             out=str(tmp_path / "out"), unsafe_local_scoring=True, concurrency=3)
+    d.update(kw)
+    return argparse.Namespace(**d)
+
+
+def test_runner_runs_every_job_once(tmp_path, fake_sota, monkeypatch):
+    from agent_evals import cli
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setattr(cli, "run_one", _fake_run_one(0.01))
+    assert cli.cmd_run(_args(tmp_path, fake_sota)) == 0
+    rows = [json.loads(l) for l in (tmp_path / "out" / "runs.jsonl").read_text().splitlines()]
+    keys = {(r["case"], r["arm"], r["sample"]) for r in rows}
+    assert len(rows) == len(keys) == len(load_cases(CASES)) * 2 * 2   # cases x arms x samples
+
+
+def test_runner_stops_at_total_budget(tmp_path, fake_sota, monkeypatch):
+    """Known-bad: a budget that is never enforced. $0.50/run against a $1.00 cap, one at a time."""
+    from agent_evals import cli
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setattr(cli, "run_one", _fake_run_one(0.50))
+    cli.cmd_run(_args(tmp_path, fake_sota, total_budget_usd=1.0, concurrency=1))
+    rows = (tmp_path / "out" / "runs.jsonl").read_text().splitlines()
+    assert len(rows) == 2

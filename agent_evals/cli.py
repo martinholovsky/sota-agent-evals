@@ -76,25 +76,39 @@ def cmd_run(a, preflight: bool = False) -> int:
         cases = [Case(cases[0].id, cases[0].dir, "Reply with the single word OK. Do not use any tools.")]
     arms = [ARMS["bare"], ARMS["library"]] if preflight else parse_arms(a.arms)
     samples = 1 if preflight else a.samples
-    spent, n = 0.0, 0
+    jobs = [(s, case, arm) for s in range(samples) for case in cases for arm in arms]  # interleaved
+    state = {"spent": 0.0, "n": 0, "stopped": False}
+    sem = asyncio.Semaphore(max(1, a.concurrency))
+    lock = asyncio.Lock()
+    (out / "traces").mkdir(exist_ok=True)
+
+    async def one(s, case, arm, f):
+        async with sem:
+            if state["spent"] >= a.total_budget_usd:
+                state["stopped"] = True
+                return
+            ws, cd, tr = await run_one(arm, case, s, cfg, key)
+            row = await asyncio.to_thread(_row, arm, case, s, ws, tr, a, sota_skills)
+            async with lock:
+                (out / "traces" / ("%s__%s__%d.json" % (case.id, arm.name.replace("+", "_"), s))).write_text(
+                    json.dumps(tr.__dict__, default=str, indent=1))
+                f.write(json.dumps(row, default=str) + "\n"); f.flush()
+                state["spent"] += (tr.result.get("total_cost_usd") or 0.0); state["n"] += 1
+                print("[%3d/%d] %-6s %-13s s%d hidden=%s unverified_done=%s $%.3f %s" % (
+                    state["n"], len(jobs), case.id, arm.name, s, row["hidden"].get("ok"),
+                    row["unverified_done"], tr.result.get("total_cost_usd") or 0.0, tr.error or ""),
+                    flush=True)
+            cleanup(ws, cd)
+
+    async def all_jobs(f):
+        await asyncio.gather(*(one(s, c, ar, f) for s, c, ar in jobs))
+
     with rows_path.open("a", encoding="utf-8") as f:
-        for s in range(samples):
-            for case in cases:
-                for arm in arms:          # interleaved, so a provider incident hits every arm
-                    if spent >= a.total_budget_usd:
-                        print("TOTAL BUDGET %.2f reached — stopping" % a.total_budget_usd, file=sys.stderr)
-                        return 3
-                    ws, cd, tr = asyncio.run(run_one(arm, case, s, cfg, key))
-                    row = _row(arm, case, s, ws, tr, a, sota_skills)
-                    (out / "traces").mkdir(exist_ok=True)
-                    (out / "traces" / ("%s__%s__%d.json" % (case.id, arm.name.replace("+", "_"), s))).write_text(
-                        json.dumps(tr.__dict__, default=str, indent=1))
-                    f.write(json.dumps(row, default=str) + "\n"); f.flush()
-                    spent += (tr.result.get("total_cost_usd") or 0.0); n += 1
-                    print("%-14s %-14s s%d  hidden=%s unverified_done=%s cost=$%.3f %s" % (
-                        case.id, arm.name, s, row["hidden"].get("ok"), row["unverified_done"],
-                        tr.result.get("total_cost_usd") or 0.0, tr.error or ""), flush=True)
-                    cleanup(ws, cd)
+        asyncio.run(all_jobs(f))
+    spent, n = state["spent"], state["n"]
+    if state["stopped"]:
+        print("TOTAL BUDGET %.2f reached — %d of %d jobs not run" % (a.total_budget_usd, len(jobs) - n, len(jobs)),
+              file=sys.stderr)
     print("%d run(s), $%.2f, rows in %s" % (n, spent, rows_path))
     if preflight:
         return check_preflight(rows_path)
@@ -136,6 +150,7 @@ def main(argv=None) -> int:
     p.add_argument("--max-budget-usd", type=float, default=1.00, help="per run")
     p.add_argument("--total-budget-usd", type=float, default=10.00, help="whole invocation")
     p.add_argument("--timeout", type=int, default=900, help="per run, seconds")
+    p.add_argument("--concurrency", type=int, default=4, help="runs in flight at once")
     p.add_argument("--out", default="results/%s" % time.strftime("%Y-%m-%d"))
     p.add_argument("--unsafe-local-scoring", action="store_true",
                    help="run hidden tests on this host when no container runtime exists")
