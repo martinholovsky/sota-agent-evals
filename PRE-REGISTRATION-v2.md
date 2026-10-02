@@ -50,4 +50,9 @@ Pilot pass rates were not inspected.
 
 ## Deviations
 
-None yet.
+- **After the run: d08 and d15 are defective** — their hidden tests encode my reference's
+  reading where the written spec says otherwise (d08: "each on its own line"; d15: the backslash
+  is "dropped", so the preceding space survives). Found by inspecting the only failing cases.
+  The pre-registered analysis over all 20 cases stands as reported; a sensitivity analysis
+  without them is reported separately and labelled **post-hoc**
+  (`reports/2026-10-02-v2/REPORT.md`). The case files are NOT edited.

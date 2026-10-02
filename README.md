@@ -80,6 +80,9 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
   on c01 (reference passes 3/3, untouched start fails).
 - **First live run, 2026-10-02: compromised** (credit outage, saturated cases) — see
   [reports/2026-10-02/REPORT.md](reports/2026-10-02/REPORT.md).
+- **v2 run, 2026-10-02: clean (240/240), all hypotheses NOT SUPPORTED, near-saturated**; the hook
+  changes behaviour (unpiped verification 0% → 100%) but no outcome difference is measurable on
+  these tasks — see [reports/2026-10-02-v2/REPORT.md](reports/2026-10-02-v2/REPORT.md).
 
 ## Licence
 

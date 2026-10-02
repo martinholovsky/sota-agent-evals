@@ -1,0 +1,72 @@
+{
+  "rows": 216,
+  "excluded": {},
+  "arms": {
+    "bare": {
+      "hidden_pass": 0.981,
+      "unverified_done": 1.0,
+      "shipped_broken": 0.019
+    },
+    "library": {
+      "hidden_pass": 1.0,
+      "unverified_done": 1.0,
+      "shipped_broken": 0.0
+    },
+    "hook": {
+      "hidden_pass": 1.0,
+      "unverified_done": 0.0,
+      "shipped_broken": 0.0
+    },
+    "library+hook": {
+      "hidden_pass": 1.0,
+      "unverified_done": 0.0,
+      "shipped_broken": 0.0
+    }
+  },
+  "hypotheses": [
+    {
+      "n_cases": 18,
+      "diff": -0.018518518518518517,
+      "ci95": [
+        -0.05555555555555555,
+        0.0
+      ],
+      "name": "H1a hook vs bare: fewer broken 'done'",
+      "metric": "shipped_broken",
+      "verdict": "NOT SUPPORTED"
+    },
+    {
+      "n_cases": 18,
+      "diff": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "name": "H1b library+hook vs library: fewer broken 'done'",
+      "metric": "shipped_broken",
+      "verdict": "NOT SUPPORTED"
+    },
+    {
+      "n_cases": 18,
+      "diff": 0.01851851851851852,
+      "ci95": [
+        0.0,
+        0.05555555555555555
+      ],
+      "name": "H2 library vs bare: hidden_pass",
+      "metric": "hidden_pass",
+      "verdict": "NOT SUPPORTED"
+    },
+    {
+      "n_cases": 18,
+      "diff": 0.01851851851851852,
+      "ci95": [
+        0.0,
+        0.05555555555555555
+      ],
+      "name": "H3 hook vs bare: hidden_pass",
+      "metric": "hidden_pass",
+      "verdict": "NOT SUPPORTED"
+    }
+  ]
+}
