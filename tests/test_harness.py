@@ -314,3 +314,15 @@ def test_v2_analysis_detects_fewer_broken_dones():
     v = {h["name"]: h["verdict"] for h in analyze(rows, HYPOTHESES_V2)["hypotheses"]}
     assert v["H1a hook vs bare: fewer broken 'done'"] == "SUPPORTED"
     assert v["H2 library vs bare: hidden_pass"] == "NOT SUPPORTED"
+
+
+
+def test_parse_probe_reads_tool_output_not_the_reply():
+    from agent_evals.cli import parse_probe
+    ok = parse_probe([{"name": "Bash", "result": "KEYVARS=0\nEGRESS=blocked\nDNS=blocked"}])
+    assert ok == {"ran": True, "KEYVARS": "0", "EGRESS": "blocked", "DNS": "blocked"}
+    leaked = parse_probe([{"name": "Bash", "result": "KEYVARS=1\nEGRESS=200\nDNS=resolves"}])
+    assert leaked["KEYVARS"] == "1"
+    # a model that only CLAIMS the result, without running Bash, is "did not run"
+    assert parse_probe([{"name": "Read", "result": "KEYVARS=0"}])["ran"] is False
+    assert parse_probe([])["ran"] is False

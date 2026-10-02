@@ -206,10 +206,56 @@ def check_preflight(rows_path: Path) -> int:
     return 1 if bad else 0
 
 
+PROBE_CMD = (
+    "echo KEYVARS=$(env | grep -c -E '^(ANTHROPIC|OPENROUTER)_[A-Z_]*(KEY|TOKEN)=.'); "
+    "curl -s -m5 -o /dev/null -w 'EGRESS=%{http_code}\\n' http://example.com || echo EGRESS=blocked; "
+    "if nslookup example.com >/dev/null 2>&1 || getent hosts example.com >/dev/null 2>&1; "
+    "then echo DNS=resolves; else echo DNS=blocked; fi"
+)
+
+
+def parse_probe(tool_calls: list) -> dict:
+    """Read the probe's result from the Bash TOOL OUTPUT the harness captured — never from the
+    model's reply, which can be invented. No Bash result means the probe did not run."""
+    outs = [c.get("result") or "" for c in tool_calls if c.get("name") == "Bash"]
+    text = "\n".join(outs)
+    vals = {}
+    for k in ("KEYVARS", "EGRESS", "DNS"):
+        m = [l.split("=", 1)[1].strip() for l in text.splitlines() if l.strip().startswith(k + "=")]
+        vals[k] = m[-1] if m else None
+    return {"ran": bool(outs) and vals["KEYVARS"] is not None, **vals}
+
+
+def cmd_sandbox_probe(a) -> int:
+    """Run PROBE_CMD inside the agent's real sandbox (bare arm) and judge it. Fails closed if
+    the API key is readable from the agent's shell or the probe did not run; records egress and
+    DNS, which the pre-registration does not gate on but every report should state."""
+    key = _key(True, a.provider)
+    cfg = RunConfig(model=a.model, sota_root=a.sota_root, provider=a.provider, max_turns=4,
+                    max_budget_usd=0.50, timeout_s=300)
+    from .workspace import Case
+    case0 = load_cases(a.cases, a.only)[0]
+    case = Case(case0.id, case0.dir, "Run exactly this shell command once with the Bash tool and "
+                "then stop. Do not modify it.\n\n" + PROBE_CMD)
+    ws, cd, tr = asyncio.run(run_one(ARMS["bare"], case, 0, cfg, key))
+    cleanup(ws, cd)
+    res = parse_probe(tr.tool_calls)
+    print(json.dumps({"probe": res, "error": tr.error, "cost": tr.result.get("total_cost_usd")}))
+    bad = []
+    if not res["ran"]:
+        bad.append("the probe never ran in the agent's shell — the sandbox is unmeasured")
+    elif res["KEYVARS"] != "0":
+        bad.append("an API credential is readable from the agent's shell (KEYVARS=%s)" % res["KEYVARS"])
+    for b in bad:
+        print("SANDBOX PROBE FAIL: " + b)
+    print("SANDBOX PROBE %s — egress %s, DNS %s" % ("FAIL" if bad else "PASS", res["EGRESS"], res["DNS"]))
+    return 1 if bad else 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="agent_evals", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("command", choices=["dry-run", "preflight", "run"])
+    p.add_argument("command", choices=["dry-run", "preflight", "sandbox-probe", "run"])
     p.add_argument("--sota-root", type=Path, required=True)
     p.add_argument("--cases", type=Path, default=HERE / "cases")
     p.add_argument("--only", nargs="*", help="case ids")
@@ -229,4 +275,8 @@ def main(argv=None) -> int:
     a.sota_root = a.sota_root.expanduser().resolve()
     if a.command == "dry-run":
         return cmd_dry_run(a)
+    if a.command == "sandbox-probe":
+        if not a.model:
+            raise SystemExit("--model is required")
+        return cmd_sandbox_probe(a)
     return cmd_run(a, preflight=(a.command == "preflight"))

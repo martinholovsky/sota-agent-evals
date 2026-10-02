@@ -54,6 +54,12 @@ fails otherwise. **Run preflight before every measurement.**
   `allowed_tools` are still pre-approved; what an unlisted tool does under `default` in a
   non-interactive SDK session is not yet verified. The scrub is kept on purpose — it is what
   stops the agent's shell reading the API key.
+- **The sandbox is measured, not assumed:** `python -m agent_evals sandbox-probe` runs a fixed
+  command inside the agent's real sandbox and reads the Bash *tool output* (never the model's
+  reply). It fails closed if an API credential is readable or the probe never ran. Measured
+  2026-10-02 (Sonnet 5.5 via OpenRouter): `KEYVARS=0`, egress **403** (blocked by the sandbox
+  proxy), DNS **blocked** — against egress 200 and DNS resolving for the same command run
+  unsandboxed on the host. Idea from Google's Mantis toolkit (in-guest probe before any PoC).
 - Scoring executes model-written code: in a container with `--network=none`, a memory and pid
   cap. With no container runtime it refuses unless `--unsafe-local-scoring` is passed.
 - Budgets on every run: `--max-turns`, `--max-budget-usd` (per run), `--timeout`, and
