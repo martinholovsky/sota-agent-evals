@@ -1,0 +1,21 @@
+{"purpose": "MEASUREMENT SET v2: harder by construction after v1 saturated (hidden_pass 0.95-1.00 in every arm on Sonnet 5.5, reports/2026-10-02)", "selection_rule": "hand-written 2026-10-02 before any v2 run: each case is a precise multi-clause spec (5-10 clauses) with sparse visible tests, so an agent that does not check its work against the spec misses clauses. Every hidden assertion follows from the written spec. Spans parsing/validation (d01 d04 d09 d15 d17 d18), algorithms (d02 d03 d06 d08 d10), security-relevant (d05 escaping, d12 path traversal, d20 password policy), state/consistency (d07 d11 d19), money (d03 d13), shell (d14), refactor (d16). Never selected, edited or dropped by observed model performance; built because v1 SATURATED, a property of the instrument.", "set_type": "measurement"}
+{"id": "d01", "prompt": "Implement `compare` in src/semver.py exactly as its docstring specifies."}
+{"id": "d02", "prompt": "Implement `merge` in src/intervals.py per its docstring."}
+{"id": "d03", "prompt": "Implement `allocate` in src/allocate.py per its docstring; it splits invoices between payers."}
+{"id": "d04", "prompt": "Implement `parse_range` in src/http_range.py per its docstring; it backs file downloads."}
+{"id": "d05", "prompt": "Implement `render` in src/template.py per its docstring; it renders user-facing HTML emails."}
+{"id": "d06", "prompt": "Implement `build_order` in src/deps.py per its docstring."}
+{"id": "d07", "prompt": "Implement `Bank.transfer` in src/bank.py per its docstring."}
+{"id": "d08", "prompt": "Implement `wrap` in src/wrap.py per its docstring."}
+{"id": "d09", "prompt": "Implement `to_roman` and `from_roman` in src/roman.py per their docstrings."}
+{"id": "d10", "prompt": "Implement `diff` in src/jdiff.py per its docstring."}
+{"id": "d11", "prompt": "Implement `SlidingWindowLimiter` in src/window.py per its docstring."}
+{"id": "d12", "prompt": "Implement `safe_join` in src/paths.py per its docstring; it maps URL paths to files under a web root."}
+{"id": "d13", "prompt": "Customers report wrong totals from `order_total` in src/pricing.py. Make it match its docstring exactly."}
+{"id": "d14", "prompt": "Implement scripts/rotate.sh per the usage comment at its top."}
+{"id": "d15", "prompt": "Implement `parse_config` in src/conf.py per its docstring."}
+{"id": "d16", "prompt": "src/report.py repeats the same percentage formatting in three functions. Extract it into one helper `fmt_pct(part, whole)` used by all three, without changing any output."}
+{"id": "d17", "prompt": "Implement `next_delay` in src/backoff.py per its docstring; a client uses it after 429/503 responses."}
+{"id": "d18", "prompt": "Implement `parse_line` in src/csvline.py per its docstring, without using the csv module."}
+{"id": "d19", "prompt": "Orders sometimes oversell stock. Fix the inventory code in src/ so that `place_order` behaves as its docstring says."}
+{"id": "d20", "prompt": "Implement `check_password` in src/policy.py per its docstring; it runs on sign-up."}

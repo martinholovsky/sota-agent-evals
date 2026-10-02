@@ -113,3 +113,15 @@ def contamination(arm_library: bool, init: dict, tool_calls: list, final_text: s
         return {"treatment_present": bool(listed), "listed": len(listed), "skill_calls": len(used)}
     return {"contaminated": bool(listed or used or vocab), "listed": len(listed),
             "skill_calls": len(used), "vocab": vocab}
+
+
+def shipped_broken(result: dict, error, tree_changed: bool, hidden_ok) -> bool | None:
+    """The hook's OUTCOME metric (v2): the agent ended normally — it declared itself done — on
+    a changed tree whose hidden tests FAIL. Unlike unverified_done this is not the hook's own
+    trigger: the hook can force *a* test run, it cannot make hidden tests pass. None when the
+    run did not end normally or scoring produced no result."""
+    if error or (result or {}).get("subtype") != "success" or (result or {}).get("is_error"):
+        return None
+    if hidden_ok is None or not tree_changed:
+        return None
+    return hidden_ok is False

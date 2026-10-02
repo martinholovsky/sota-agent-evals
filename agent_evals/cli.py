@@ -21,7 +21,7 @@ from pathlib import Path
 
 from .arms import ARMS, cleanup, parse_arms, sota_skill_names
 from .runner import RunConfig, options_for, run_one
-from .score import contamination, hidden_pass, tree_changed, unverified_done
+from .score import contamination, hidden_pass, shipped_broken, tree_changed, unverified_done
 from .workspace import load_cases
 
 HERE = Path(__file__).resolve().parent.parent
@@ -89,13 +89,15 @@ def cmd_dry_run(a) -> int:
 
 def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
     changed = tree_changed(ws)
+    hidden = hidden_pass(case.dir, ws, unsafe_local=a.unsafe_local_scoring)
     return {
+        "shipped_broken": shipped_broken(tr.result, tr.error, changed, hidden.get("ok")),
         "case": case.id, "arm": arm.name, "sample": sample, "error": tr.error,
         "init_seen": bool(tr.init),
         "result": tr.result, "wall_s": tr.wall_s, "tool_calls": len(tr.tool_calls),
         "tree_changed": changed,
         "unverified_done": unverified_done(tr.tool_calls, tr.result, changed),
-        "hidden": hidden_pass(case.dir, ws, unsafe_local=a.unsafe_local_scoring),
+        "hidden": hidden,
         "contamination": contamination(arm.library, tr.init, tr.tool_calls, tr.final_text, sota_skills),
         # the hook's treatment check: it writes its ledger under .git/ when it runs at all.
         # Without this a hook that silently never registered would read as "no effect" on H1.

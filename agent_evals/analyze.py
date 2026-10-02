@@ -13,7 +13,15 @@ import random
 import sys
 from collections import defaultdict
 
-HYPOTHESES = [  # (name, metric, treatment, control, direction: +1 = treatment should be higher)
+HYPOTHESES_V2 = [  # PRE-REGISTRATION-v2.md
+    ("H1a hook vs bare: fewer broken 'done'", "shipped_broken", "hook", "bare", -1),
+    ("H1b library+hook vs library: fewer broken 'done'", "shipped_broken", "library+hook", "library", -1),
+    ("H2 library vs bare: hidden_pass", "hidden_pass", "library", "bare", +1),
+    ("H3 hook vs bare: hidden_pass", "hidden_pass", "hook", "bare", +1),
+]
+
+HYPOTHESES = [  # v1 (PRE-REGISTRATION.md) — kept unchanged so the v1 analysis reproduces
+    # (name, metric, treatment, control, direction: +1 = treatment should be higher)
     ("H1a hook vs bare", "unverified_done", "hook", "bare", -1),
     ("H1b library+hook vs library", "unverified_done", "library+hook", "library", -1),
     ("H2 library vs bare", "hidden_pass", "library", "bare", +1),
@@ -22,6 +30,9 @@ HYPOTHESES = [  # (name, metric, treatment, control, direction: +1 = treatment s
 
 
 def value(row, metric):
+    if metric == "shipped_broken":
+        v = row.get("shipped_broken")
+        return None if v is None else float(v)
     if metric == "hidden_pass":
         ok = (row.get("hidden") or {}).get("ok")
         return None if ok is None else float(ok)
@@ -63,16 +74,17 @@ def bootstrap_diff(t: dict, c: dict, iters=10000, seed=0):
             "ci95": (means[int(0.025 * iters)], means[int(0.975 * iters) - 1])}
 
 
-def analyze(rows):
+def analyze(rows, hypotheses=None):
+    hypotheses = hypotheses or HYPOTHESES
     out = {"rows": len(rows), "excluded": defaultdict(int), "arms": {}, "hypotheses": []}
     for r in rows:
         why = excluded(r)
         if why:
             out["excluded"][why + ":" + r["arm"]] += 1
-    for metric in ("hidden_pass", "unverified_done"):
+    for metric in ("hidden_pass", "unverified_done", "shipped_broken"):
         for arm, cs in per_case(rows, metric).items():
             out["arms"].setdefault(arm, {})[metric] = round(sum(cs.values()) / len(cs), 3) if cs else None
-    for name, metric, t, c, direction in HYPOTHESES:
+    for name, metric, t, c, direction in hypotheses:
         pc = per_case(rows, metric)
         b = bootstrap_diff(pc.get(t, {}), pc.get(c, {}))
         if b is None:
@@ -91,9 +103,11 @@ def analyze(rows):
 
 
 def main(argv=None):
-    path = (argv or sys.argv[1:])[0]
+    args = argv or sys.argv[1:]
+    hyps = HYPOTHESES_V2 if "--v2" in args else HYPOTHESES
+    path = [a for a in args if a != "--v2"][0]
     rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
-    print(json.dumps(analyze(rows), indent=2, default=str))
+    print(json.dumps(analyze(rows, hyps), indent=2, default=str))
 
 
 if __name__ == "__main__":

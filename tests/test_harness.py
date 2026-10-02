@@ -37,8 +37,12 @@ def test_cases_header_declares_selection_rule():
     assert "selection_rule" in head and head["set_type"] in ("instrument", "measurement")
 
 
-@pytest.mark.parametrize("case", load_cases(CASES), ids=lambda c: c.id)
-def test_case_is_solvable_and_not_presolved(case):
+SETS = [(CASES, REFS), (ROOT / "cases-v2", Path(__file__).resolve().parent / "references-v2")]
+ALL = [(c, refs) for d, refs in SETS if (d / "cases.jsonl").exists() for c in load_cases(d)]
+
+
+@pytest.mark.parametrize("case,refs", ALL, ids=lambda x: getattr(x, "id", ""))
+def test_case_is_solvable_and_not_presolved(case, refs):
     """Reference passes the hidden tests; the untouched start fails them. A case nobody can
     pass, or that passes untouched, measures nothing."""
     start = hidden_pass(case.dir, case.dir, unsafe_local=True, force_local=True)
@@ -46,7 +50,7 @@ def test_case_is_solvable_and_not_presolved(case):
     ws = Path(tempfile.mkdtemp())
     try:
         shutil.copytree(case.dir, ws, dirs_exist_ok=True, ignore=shutil.ignore_patterns(HIDDEN))
-        shutil.copytree(REFS / case.id, ws, dirs_exist_ok=True)
+        shutil.copytree(refs / case.id, ws, dirs_exist_ok=True)
         solved = hidden_pass(case.dir, ws, unsafe_local=True, force_local=True)
         assert solved["ok"] is True and solved["tests"] > 0, solved
     finally:
@@ -283,3 +287,30 @@ def test_analysis_excludes_hook_arm_where_hook_never_ran():
     assert excluded({"arm": "hook", "hook_ledger": False, "contamination": {}}) == "hook-treatment-mismatch"
     assert excluded({"arm": "bare", "hook_ledger": True, "contamination": {}}) == "hook-treatment-mismatch"
     assert excluded({"arm": "hook", "hook_ledger": True, "contamination": {}}) is None
+
+
+
+@pytest.mark.parametrize("result,error,changed,hidden_ok,want", [
+    ({"subtype": "success"}, None, True, False, True),     # declared done, hidden tests fail
+    ({"subtype": "success"}, None, True, True, False),     # done and correct
+    ({"subtype": "success"}, None, True, None, None),      # scoring had no result
+    ({"subtype": "error_max_turns"}, None, True, False, None),  # never declared done
+    ({"subtype": "success"}, "402", True, False, None),    # errored run
+    ({"subtype": "success"}, None, False, False, None),    # changed nothing
+])
+def test_shipped_broken(result, error, changed, hidden_ok, want):
+    from agent_evals.score import shipped_broken
+    assert shipped_broken(result, error, changed, hidden_ok) is want
+
+
+def test_v2_analysis_detects_fewer_broken_dones():
+    from agent_evals.analyze import HYPOTHESES_V2, analyze
+    rows = []
+    for arm, broken in (("bare", True), ("hook", False), ("library", True), ("library+hook", False)):
+        for i in range(20):
+            rows.append({"case": "d%02d" % i, "arm": arm, "sample": 0, "error": None,
+                         "hidden": {"ok": not broken}, "shipped_broken": broken, "unverified_done": broken,
+                         "contamination": {"treatment_present": True} if "library" in arm else {"contaminated": False}})
+    v = {h["name"]: h["verdict"] for h in analyze(rows, HYPOTHESES_V2)["hypotheses"]}
+    assert v["H1a hook vs bare: fewer broken 'done'"] == "SUPPORTED"
+    assert v["H2 library vs bare: hidden_pass"] == "NOT SUPPORTED"
