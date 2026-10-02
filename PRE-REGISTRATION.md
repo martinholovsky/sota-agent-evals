@@ -55,6 +55,10 @@ the ceiling is a fact about the instrument, never about the treatment (rules/01 
   the paired difference lies entirely below 0; H2 iff entirely above 0; H3 (non-inferiority)
   iff the CI's lower bound is above **−0.10** (a hook may cost at most 10 points of hidden-test
   pass rate). The −0.10 margin is fixed here, before data, not chosen afterwards.
+- A run whose scoring container could not start (`hidden.ok` is `None`, runtime rc 125–127)
+  has no hidden-test result: it is excluded from hidden_pass and counted, never scored as a
+  failure. If more than 5% of rows lack a result, the scoring is re-run on the kept
+  workspaces before analysis.
 
 ## Deviations
 
