@@ -79,6 +79,15 @@ edited into the table.
   **Pilot pass rates are not looked at for this decision and pilot rows are excluded from the
   analysis.**
 
+## Rule applied — 2026-10-02, before the measurement run
+
+Pilot (`results/2026-10-02-pilot`, 12 runs, excluded from the analysis): 12/12 completed, no
+errors; every treatment check correct (library arms list 42 sota skills, bare/hook arms
+uncontaminated, the hook's ledger present in exactly the hook arms). Mean OpenRouter cost
+C = **$0.105/run** (max $0.175; OpenRouter delta equalled the SDK estimate to the cent).
+240 × C × 1.15 = **$28.98** ≤ remaining $48.44 → **`anthropic/claude-sonnet-5.5`, 3 samples**.
+Pilot pass rates were not inspected for this decision. Measurement invocation cap: $45.
+
 ## Deviations
 
 None yet.
