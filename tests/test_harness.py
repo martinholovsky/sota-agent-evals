@@ -210,3 +210,40 @@ def test_runner_stops_at_total_budget(tmp_path, fake_sota, monkeypatch):
     cli.cmd_run(_args(tmp_path, fake_sota, total_budget_usd=1.0, concurrency=1))
     rows = (tmp_path / "out" / "runs.jsonl").read_text().splitlines()
     assert len(rows) == 2
+
+
+# ---- the pre-registered analysis, on synthetic rows with a known answer -----------------
+def _rows(spec):
+    """spec: {arm: (hidden_ok_prob_by_case_fn, unverified_fn)} -> rows over 20 cases x 3 samples."""
+    rows = []
+    for arm, (hp, ud) in spec.items():
+        for i in range(20):
+            for s in range(3):
+                rows.append({"case": "c%02d" % i, "arm": arm, "sample": s, "error": None,
+                             "hidden": {"ok": hp(i, s)}, "unverified_done": ud(i, s),
+                             "contamination": {"contaminated": False} if "library" not in arm
+                             else {"treatment_present": True}})
+    return rows
+
+
+def test_analysis_detects_a_real_effect_and_not_a_null():
+    from agent_evals.analyze import analyze
+    effect = _rows({"bare": (lambda i, s: i % 2 == 0, lambda i, s: True),
+                    "hook": (lambda i, s: i % 2 == 0, lambda i, s: False),
+                    "library": (lambda i, s: True, lambda i, s: True),
+                    "library+hook": (lambda i, s: True, lambda i, s: False)})
+    v = {h["name"]: h["verdict"] for h in analyze(effect)["hypotheses"]}
+    assert v["H1a hook vs bare"] == "SUPPORTED" and v["H2 library vs bare"] == "SUPPORTED"
+    null = _rows({a: (lambda i, s: i % 2 == 0, lambda i, s: i % 3 == 0)
+                  for a in ("bare", "hook", "library", "library+hook")})
+    v = {h["name"]: h["verdict"] for h in analyze(null)["hypotheses"]}
+    assert v["H1a hook vs bare"] == "NOT SUPPORTED" and v["H2 library vs bare"] == "NOT SUPPORTED"
+
+
+def test_analysis_excludes_and_counts_contaminated_rows():
+    from agent_evals.analyze import analyze
+    rows = _rows({"bare": (lambda i, s: True, lambda i, s: False)})
+    rows[0]["contamination"] = {"contaminated": True}
+    rows[1]["error"] = "timeout"
+    out = analyze(rows)
+    assert out["excluded"] == {"contaminated:bare": 1, "error:bare": 1}

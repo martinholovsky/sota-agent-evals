@@ -48,6 +48,14 @@ Per-arm rates with 95% bootstrap CIs over cases (cases, not runs, are the unit o
 paired differences per case. Report every arm, including nulls. A measure where both arms sit at
 the ceiling is a fact about the instrument, never about the treatment (rules/01 §8.1).
 
+## Addendum — 2026-10-02, still before any measurement run
+
+- The analysis is `agent_evals/analyze.py`, committed with this addendum and tested on
+  synthetic rows with a known effect and a known null. Verdicts: H1 SUPPORTED iff the 95% CI of
+  the paired difference lies entirely below 0; H2 iff entirely above 0; H3 (non-inferiority)
+  iff the CI's lower bound is above **−0.10** (a hook may cost at most 10 points of hidden-test
+  pass rate). The −0.10 margin is fixed here, before data, not chosen afterwards.
+
 ## Deviations
 
 None yet.
