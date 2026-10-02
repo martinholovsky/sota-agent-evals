@@ -1,0 +1,136 @@
+"""Command line: dry-run (no API), preflight (isolation controls, cents), run (a measurement).
+
+    python -m agent_evals dry-run   --sota-root ~/Github/SOTA-skills
+    python -m agent_evals preflight --sota-root ~/Github/SOTA-skills --model <id>
+    python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model <id> \\
+        --arms bare,library,hook,library+hook --samples 3 --out results/<date>
+
+The API key is read from ANTHROPIC_API_KEY only. It is never logged, and the agent's own shell
+cannot read it (CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1).
+"""
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+from .arms import ARMS, cleanup, parse_arms, sota_skill_names
+from .runner import RunConfig, options_for, run_one
+from .score import contamination, hidden_pass, tree_changed, unverified_done
+from .workspace import load_cases
+
+HERE = Path(__file__).resolve().parent.parent
+
+
+def _key(required: bool) -> str:
+    k = os.environ.get("ANTHROPIC_API_KEY", "")
+    if required and not k:
+        raise SystemExit("ANTHROPIC_API_KEY is not set — refusing to start (no partial runs)")
+    return k or "dry-run-no-key"
+
+
+def cmd_dry_run(a) -> int:
+    cfg = RunConfig(model=a.model or "MODEL-NOT-SET", sota_root=a.sota_root)
+    for case in load_cases(a.cases, a.only):
+        for arm in parse_arms(a.arms):
+            ws, cd, kw = options_for(arm, case, cfg, _key(False))
+            shown = dict(kw, env={k: ("<redacted>" if "KEY" in k else v) for k, v in kw["env"].items()})
+            skills = sorted(p.name for p in (cd / "skills").iterdir())
+            print(json.dumps({"case": case.id, "arm": arm.name, "skills_installed": len(skills),
+                              "hook": "hooks" in json.loads((cd / "settings.json").read_text()),
+                              "options": shown}, default=str))
+            cleanup(ws, cd)
+    return 0
+
+
+def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
+    changed = tree_changed(ws)
+    return {
+        "case": case.id, "arm": arm.name, "sample": sample, "error": tr.error,
+        "result": tr.result, "wall_s": tr.wall_s, "tool_calls": len(tr.tool_calls),
+        "tree_changed": changed,
+        "unverified_done": unverified_done(tr.tool_calls, tr.result, changed),
+        "hidden": hidden_pass(case.dir, ws, unsafe_local=a.unsafe_local_scoring),
+        "contamination": contamination(arm.library, tr.init, tr.tool_calls, tr.final_text, sota_skills),
+    }
+
+
+def cmd_run(a, preflight: bool = False) -> int:
+    key = _key(True)
+    if not a.model:
+        raise SystemExit("--model is required (model ids live in config, never in code)")
+    cfg = RunConfig(model=a.model, sota_root=a.sota_root,
+                    max_turns=2 if preflight else a.max_turns,
+                    max_budget_usd=0.05 if preflight else a.max_budget_usd, timeout_s=a.timeout)
+    out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
+    rows_path = out / ("preflight.jsonl" if preflight else "runs.jsonl")
+    sota_skills = sota_skill_names(a.sota_root)
+    cases = load_cases(a.cases, a.only)[:1] if preflight else load_cases(a.cases, a.only)
+    arms = [ARMS["bare"], ARMS["library"]] if preflight else parse_arms(a.arms)
+    samples = 1 if preflight else a.samples
+    spent, n = 0.0, 0
+    with rows_path.open("a", encoding="utf-8") as f:
+        for s in range(samples):
+            for case in cases:
+                for arm in arms:          # interleaved, so a provider incident hits every arm
+                    if spent >= a.total_budget_usd:
+                        print("TOTAL BUDGET %.2f reached — stopping" % a.total_budget_usd, file=sys.stderr)
+                        return 3
+                    ws, cd, tr = asyncio.run(run_one(arm, case, s, cfg, key))
+                    row = _row(arm, case, s, ws, tr, a, sota_skills)
+                    (out / "traces").mkdir(exist_ok=True)
+                    (out / "traces" / ("%s__%s__%d.json" % (case.id, arm.name.replace("+", "_"), s))).write_text(
+                        json.dumps(tr.__dict__, default=str, indent=1))
+                    f.write(json.dumps(row, default=str) + "\n"); f.flush()
+                    spent += (tr.result.get("total_cost_usd") or 0.0); n += 1
+                    print("%-14s %-14s s%d  hidden=%s unverified_done=%s cost=$%.3f %s" % (
+                        case.id, arm.name, s, row["hidden"].get("ok"), row["unverified_done"],
+                        tr.result.get("total_cost_usd") or 0.0, tr.error or ""), flush=True)
+                    cleanup(ws, cd)
+    print("%d run(s), $%.2f, rows in %s" % (n, spent, rows_path))
+    if preflight:
+        return check_preflight(rows_path)
+    return 0
+
+
+def check_preflight(rows_path: Path) -> int:
+    """The isolation controls, both directions: bare must NOT see the library, library MUST."""
+    rows = [json.loads(l) for l in rows_path.read_text().splitlines() if l.strip()][-2:]
+    by = {r["arm"]: r for r in rows}
+    bad = []
+    if by.get("bare", {}).get("contamination", {}).get("listed", 1) != 0:
+        bad.append("bare arm lists sota skills — isolation is broken")
+    if not by.get("library", {}).get("contamination", {}).get("treatment_present"):
+        bad.append("library arm lists no sota skills — the treatment did not load")
+    for b in bad:
+        print("PREFLIGHT FAIL: " + b)
+    print("PREFLIGHT %s" % ("FAIL" if bad else "PASS"))
+    return 1 if bad else 0
+
+
+def main(argv=None) -> int:
+    p = argparse.ArgumentParser(prog="agent_evals", description=__doc__,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("command", choices=["dry-run", "preflight", "run"])
+    p.add_argument("--sota-root", type=Path, required=True)
+    p.add_argument("--cases", type=Path, default=HERE / "cases")
+    p.add_argument("--only", nargs="*", help="case ids")
+    p.add_argument("--arms", default="bare,library")
+    p.add_argument("--model")
+    p.add_argument("--samples", type=int, default=1)
+    p.add_argument("--max-turns", type=int, default=40)
+    p.add_argument("--max-budget-usd", type=float, default=1.00, help="per run")
+    p.add_argument("--total-budget-usd", type=float, default=10.00, help="whole invocation")
+    p.add_argument("--timeout", type=int, default=900, help="per run, seconds")
+    p.add_argument("--out", default="results/%s" % time.strftime("%Y-%m-%d"))
+    p.add_argument("--unsafe-local-scoring", action="store_true",
+                   help="run hidden tests on this host when no container runtime exists")
+    a = p.parse_args(argv)
+    a.sota_root = a.sota_root.expanduser().resolve()
+    if a.command == "dry-run":
+        return cmd_dry_run(a)
+    return cmd_run(a, preflight=(a.command == "preflight"))

@@ -1,0 +1,16 @@
+[project]
+name = "sota-agent-evals"
+version = "0.1.0"
+description = "Agent-loop evals for SOTA-skills, driven through the Claude Agent SDK"
+requires-python = ">=3.10"
+# Pinned: the SDK's option names and defaults are what the isolation in agent_evals/arms.py is
+# written against (checked 2026-10-02 against code.claude.com/docs/en/agent-sdk/python).
+# Bump deliberately and re-run `pytest` and `python -m agent_evals preflight`.
+dependencies = ["claude-agent-sdk==0.2.163"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
