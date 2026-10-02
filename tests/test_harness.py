@@ -156,3 +156,17 @@ def test_agent_written_hidden_dir_cannot_score_itself(tmp_path):
         assert hidden_pass(case.dir, ws, unsafe_local=True)["ok"] is False
     finally:
         shutil.rmtree(ws, ignore_errors=True)
+
+
+def test_preflight_fails_on_errored_runs(tmp_path):
+    """Known-bad from the first live run: two 401s, no init, and the gate printed PASS."""
+    from agent_evals.cli import check_preflight
+    rows = tmp_path / "p.jsonl"
+    err = {"error": "ResultError: 401", "init_seen": False, "result": {},
+           "contamination": {"listed": 0, "treatment_present": False}}
+    rows.write_text("\n".join(json.dumps(dict(err, arm=a)) for a in ("bare", "library")) + "\n")
+    assert check_preflight(rows) == 1
+    ok = {"error": None, "init_seen": True, "result": {"subtype": "success"}}
+    rows.write_text(json.dumps(dict(ok, arm="bare", contamination={"listed": 0})) + "\n" +
+                    json.dumps(dict(ok, arm="library", contamination={"listed": 42, "treatment_present": True})) + "\n")
+    assert check_preflight(rows) == 0

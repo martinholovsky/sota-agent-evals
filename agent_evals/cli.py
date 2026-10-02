@@ -51,6 +51,7 @@ def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
     changed = tree_changed(ws)
     return {
         "case": case.id, "arm": arm.name, "sample": sample, "error": tr.error,
+        "init_seen": bool(tr.init),
         "result": tr.result, "wall_s": tr.wall_s, "tool_calls": len(tr.tool_calls),
         "tree_changed": changed,
         "unverified_done": unverified_done(tr.tool_calls, tr.result, changed),
@@ -64,12 +65,15 @@ def cmd_run(a, preflight: bool = False) -> int:
     if not a.model:
         raise SystemExit("--model is required (model ids live in config, never in code)")
     cfg = RunConfig(model=a.model, sota_root=a.sota_root,
-                    max_turns=2 if preflight else a.max_turns,
+                    max_turns=3 if preflight else a.max_turns,
                     max_budget_usd=0.05 if preflight else a.max_budget_usd, timeout_s=a.timeout)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     rows_path = out / ("preflight.jsonl" if preflight else "runs.jsonl")
     sota_skills = sota_skill_names(a.sota_root)
-    cases = load_cases(a.cases, a.only)[:1] if preflight else load_cases(a.cases, a.only)
+    cases = load_cases(a.cases, a.only)
+    if preflight:   # a prompt a working setup finishes in ONE turn: success is then observable
+        from .workspace import Case
+        cases = [Case(cases[0].id, cases[0].dir, "Reply with the single word OK. Do not use any tools.")]
     arms = [ARMS["bare"], ARMS["library"]] if preflight else parse_arms(a.arms)
     samples = 1 if preflight else a.samples
     spent, n = 0.0, 0
@@ -102,6 +106,12 @@ def check_preflight(rows_path: Path) -> int:
     rows = [json.loads(l) for l in rows_path.read_text().splitlines() if l.strip()][-2:]
     by = {r["arm"]: r for r in rows}
     bad = []
+    # A run that errored or never started a session says NOTHING about isolation: the first
+    # draft printed PASS over two 401s, because an absent skill listing reads as "isolated".
+    for r in rows:
+        if r.get("error") or not r.get("init_seen") or (r.get("result") or {}).get("subtype") != "success":
+            bad.append("%s run did not complete (%s) — isolation is unverified, not passed"
+                       % (r["arm"], r.get("error") or (r.get("result") or {}).get("subtype") or "no init"))
     if by.get("bare", {}).get("contamination", {}).get("listed", 1) != 0:
         bad.append("bare arm lists sota skills — isolation is broken")
     if not by.get("library", {}).get("contamination", {}).get("treatment_present"):

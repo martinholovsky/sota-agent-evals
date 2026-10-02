@@ -49,6 +49,11 @@ fails otherwise. **Run preflight before every measurement.**
 - The agent's Bash runs in the SDK command sandbox with `failIfUnavailable: True` (the Python
   SDK's default would run unsandboxed with a warning) and `allowUnsandboxedCommands: False`;
   `permission_mode="dontAsk"` denies any tool not listed.
+- **Known gap, measured on the first live run:** with `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`
+  the CLI prints *"Permission mode forced to default"*, so `dontAsk` is NOT what runs. Tools in
+  `allowed_tools` are still pre-approved; what an unlisted tool does under `default` in a
+  non-interactive SDK session is not yet verified. The scrub is kept on purpose — it is what
+  stops the agent's shell reading the API key.
 - Scoring executes model-written code: in a container with `--network=none`, a memory and pid
   cap. With no container runtime it refuses unless `--unsafe-local-scoring` is passed.
 - Budgets on every run: `--max-turns`, `--max-budget-usd` (per run), `--timeout`, and
@@ -74,3 +79,8 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
 - Harness tests: 22, each scorer shown a known-good and a known-bad. Container scoring verified
   on c01 (reference passes 3/3, untouched start fails).
 - Not yet run against the live API.
+
+## Licence
+
+Apache-2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). The SOTA-skills library this measures
+is CC BY 4.0 for its content.
