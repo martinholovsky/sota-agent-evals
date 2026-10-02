@@ -41,6 +41,13 @@ The v1 run (reports/2026-10-02) was compromised by a credit outage and saturated
 - A measure at the ceiling or floor in both arms of a comparison is reported as uninformative
   for that comparison, whatever the verdict line says (rules/01 §8.1).
 
+## Rule applied — before the measurement run
+
+Pilot (`results/v2-pilot`, 12 runs, excluded): 12/12 completed, 0 errors, every treatment and
+hook-ledger check correct. C = **$0.108/run** (max $0.164). Pilot + its preflight ≈ $1.40, so
+remaining ≈ $34.60. 240·C·1.15 = **$29.81** fits → **S = 3**. Measurement cap: **$34.50**.
+Pilot pass rates were not inspected.
+
 ## Deviations
 
 None yet.
