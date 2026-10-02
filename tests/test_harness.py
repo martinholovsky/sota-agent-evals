@@ -41,13 +41,13 @@ def test_cases_header_declares_selection_rule():
 def test_case_is_solvable_and_not_presolved(case):
     """Reference passes the hidden tests; the untouched start fails them. A case nobody can
     pass, or that passes untouched, measures nothing."""
-    start = hidden_pass(case.dir, case.dir, unsafe_local=True)
+    start = hidden_pass(case.dir, case.dir, unsafe_local=True, force_local=True)
     assert start["ok"] is False, start
     ws = Path(tempfile.mkdtemp())
     try:
         shutil.copytree(case.dir, ws, dirs_exist_ok=True, ignore=shutil.ignore_patterns(HIDDEN))
         shutil.copytree(REFS / case.id, ws, dirs_exist_ok=True)
-        solved = hidden_pass(case.dir, ws, unsafe_local=True)
+        solved = hidden_pass(case.dir, ws, unsafe_local=True, force_local=True)
         assert solved["ok"] is True and solved["tests"] > 0, solved
     finally:
         shutil.rmtree(ws, ignore_errors=True)
@@ -57,7 +57,7 @@ def test_hidden_pass_rejects_zero_tests(tmp_path):
     """'Ran 0 tests' exits 0 — an empty discovery must not read as a pass."""
     case = tmp_path / "c"; (case / HIDDEN).mkdir(parents=True); (case / HIDDEN / "__init__.py").write_text("")
     ws = tmp_path / "w"; ws.mkdir()
-    r = hidden_pass(case, ws, unsafe_local=True)
+    r = hidden_pass(case, ws, unsafe_local=True, force_local=True)
     assert r["ok"] is False and r["tests"] == 0
 
 
@@ -153,7 +153,7 @@ def test_agent_written_hidden_dir_cannot_score_itself(tmp_path):
         (ws / HIDDEN / "__init__.py").write_text("")
         (ws / HIDDEN / "test_hidden.py").write_text(
             "import unittest\nclass X(unittest.TestCase):\n    def test_x(self): pass\n")
-        assert hidden_pass(case.dir, ws, unsafe_local=True)["ok"] is False
+        assert hidden_pass(case.dir, ws, unsafe_local=True, force_local=True)["ok"] is False
     finally:
         shutil.rmtree(ws, ignore_errors=True)
 
@@ -247,3 +247,15 @@ def test_analysis_excludes_and_counts_contaminated_rows():
     rows[1]["error"] = "timeout"
     out = analyze(rows)
     assert out["excluded"] == {"contaminated:bare": 1, "error:bare": 1}
+
+
+def test_runtime_failure_is_no_result_not_a_failed_run(tmp_path, monkeypatch):
+    """Known-bad from 2026-10-02: podman down -> rc 125 was scored as the AGENT failing."""
+    from agent_evals import score
+    case = load_cases(CASES)[0]
+    monkeypatch.setattr(score, "container_runtime", lambda: "false")   # `false` exits 1...
+    class P:  # ...so fake the runtime's own 125 directly
+        returncode, stdout, stderr = 125, "", "Error: unable to connect to Podman socket"
+    monkeypatch.setattr(score.subprocess, "run", lambda *a, **k: P())
+    r = score.hidden_pass(case.dir, case.dir)
+    assert r["ok"] is None and "runtime failed" in r["why"]

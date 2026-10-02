@@ -37,7 +37,9 @@ def container_runtime() -> str | None:
     return None
 
 
-def hidden_pass(case_dir: Path, workspace: Path, unsafe_local: bool = False, timeout: int = 300) -> dict:
+def hidden_pass(case_dir: Path, workspace: Path, unsafe_local: bool = False, timeout: int = 300,
+                force_local: bool = False) -> dict:
+    """force_local: for the harness's OWN reference solutions only — never for agent output."""
     tmp = Path(tempfile.mkdtemp(prefix="s-"))
     try:
         # Drop any hidden/ the AGENT created: only the case's own hidden tests may be scored,
@@ -45,7 +47,7 @@ def hidden_pass(case_dir: Path, workspace: Path, unsafe_local: bool = False, tim
         shutil.copytree(workspace, tmp / "w", ignore=shutil.ignore_patterns(".git", HIDDEN))
         shutil.copytree(case_dir / HIDDEN, tmp / "w" / HIDDEN)
         test = ["python", "-m", "unittest", "discover", "-s", HIDDEN, "-t", "."]
-        rt = container_runtime()
+        rt = None if force_local else container_runtime()
         if rt:
             cmd = [rt, "run", "--rm", "--network=none", "--memory=1g", "--pids-limit=256",
                    "-v", "%s:/w:Z" % (tmp / "w"), "-w", "/w", SCORE_IMAGE, *test]
@@ -56,6 +58,12 @@ def hidden_pass(case_dir: Path, workspace: Path, unsafe_local: bool = False, tim
                                        "model-written code on this host"}
         p = subprocess.run(cmd, cwd=tmp / "w", capture_output=True, text=True, timeout=timeout)
         tail = (p.stdout + p.stderr)[-600:]
+        # 125/126/127 come from the container RUNTIME (could not start / exec), not from the
+        # tests. Scoring them as a failed run would charge an infrastructure outage to the agent
+        # — seen 2026-10-02 when the podman machine stopped mid-session. No result, with reason.
+        if rt and p.returncode in (125, 126, 127):
+            return {"ok": None, "why": "container runtime failed (rc %d): %s" % (p.returncode, tail[-200:]),
+                    "runtime": rt}
         ran = re.search(r"Ran (\d+) test", tail)
         # "Ran 0 tests" is OK with exit 0 — an empty discovery is not a pass (rules/11 §2.2)
         n = int(ran.group(1)) if ran else 0
