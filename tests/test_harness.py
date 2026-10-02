@@ -187,7 +187,7 @@ def _args(tmp_path, fake_sota, **kw):
     import argparse
     d = dict(model="m", sota_root=fake_sota, cases=CASES, only=None, arms="bare,library",
              samples=2, max_turns=5, max_budget_usd=1.0, total_budget_usd=100.0, timeout=60,
-             out=str(tmp_path / "out"), unsafe_local_scoring=True, concurrency=3)
+             out=str(tmp_path / "out"), unsafe_local_scoring=True, concurrency=3, provider="anthropic")
     d.update(kw)
     return argparse.Namespace(**d)
 
@@ -261,3 +261,17 @@ def test_runtime_failure_is_no_result_not_a_failed_run(tmp_path, monkeypatch):
     monkeypatch.setattr(score.subprocess, "run", lambda *a, **k: P())
     r = score.hidden_pass(case.dir, case.dir)
     assert r["ok"] is None and "runtime failed" in r["why"]
+
+
+def test_openrouter_env_and_key_not_left_in_process(monkeypatch):
+    from agent_evals import cli
+    from agent_evals.arms import run_env
+    env = run_env(Path("/c"), "or-key", "openrouter", "anthropic/claude-sonnet-5.5")
+    assert env["ANTHROPIC_BASE_URL"] == "https://openrouter.ai/api"
+    assert env["ANTHROPIC_AUTH_TOKEN"] == "or-key" and env["ANTHROPIC_API_KEY"] == ""
+    assert env["ANTHROPIC_DEFAULT_HAIKU_MODEL"] == "anthropic/claude-sonnet-5.5"
+    assert env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] == "1"
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    assert cli._key(True, "openrouter") == "or-key"
+    import os
+    assert "OPENROUTER_API_KEY" not in os.environ          # popped: the agent cannot inherit it

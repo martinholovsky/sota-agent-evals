@@ -27,19 +27,42 @@ from .workspace import load_cases
 HERE = Path(__file__).resolve().parent.parent
 
 
-def _key(required: bool) -> str:
-    k = os.environ.get("ANTHROPIC_API_KEY", "")
+KEY_VAR = {"anthropic": "ANTHROPIC_API_KEY", "openrouter": "OPENROUTER_API_KEY"}
+
+
+def _key(required: bool, provider: str = "anthropic") -> str:
+    """Read the key, then REMOVE it from this process's environment: the SDK merges its env on
+    top of the inherited one, so a key left here would reach the agent's shell. Claude Code's
+    subprocess scrub covers the variable it is handed, not arbitrary ones like this."""
+    var = KEY_VAR[provider]
+    k = os.environ.pop(var, "")
     if required and not k:
-        raise SystemExit("ANTHROPIC_API_KEY is not set — refusing to start (no partial runs)")
+        raise SystemExit("%s is not set — refusing to start (no partial runs)" % var)
     return k or "dry-run-no-key"
 
 
+def openrouter_usage(key: str) -> float | None:
+    """Cumulative USD spent on this OpenRouter key (GET /api/v1/key -> data.usage). The SDK's
+    total_cost_usd is estimated from Anthropic's price list, so it is not the budget of record
+    when the calls go through OpenRouter."""
+    import urllib.request
+    req = urllib.request.Request("https://openrouter.ai/api/v1/key",
+                                 headers={"Authorization": "Bearer " + key})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return float(json.load(r)["data"]["usage"])
+    except Exception as e:
+        print("openrouter usage check failed: %r" % (e,), file=sys.stderr)
+        return None
+
+
 def cmd_dry_run(a) -> int:
-    cfg = RunConfig(model=a.model or "MODEL-NOT-SET", sota_root=a.sota_root)
+    cfg = RunConfig(model=a.model or "MODEL-NOT-SET", sota_root=a.sota_root, provider=a.provider)
     for case in load_cases(a.cases, a.only):
         for arm in parse_arms(a.arms):
-            ws, cd, kw = options_for(arm, case, cfg, _key(False))
-            shown = dict(kw, env={k: ("<redacted>" if "KEY" in k else v) for k, v in kw["env"].items()})
+            ws, cd, kw = options_for(arm, case, cfg, _key(False, a.provider))
+            shown = dict(kw, env={k: ("<redacted>" if ("KEY" in k or "TOKEN" in k) and v else v)
+                                  for k, v in kw["env"].items()})
             skills = sorted(p.name for p in (cd / "skills").iterdir())
             print(json.dumps({"case": case.id, "arm": arm.name, "skills_installed": len(skills),
                               "hook": "hooks" in json.loads((cd / "settings.json").read_text()),
@@ -62,10 +85,10 @@ def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
 
 
 def cmd_run(a, preflight: bool = False) -> int:
-    key = _key(True)
+    key = _key(True, a.provider)
     if not a.model:
         raise SystemExit("--model is required (model ids live in config, never in code)")
-    cfg = RunConfig(model=a.model, sota_root=a.sota_root,
+    cfg = RunConfig(model=a.model, sota_root=a.sota_root, provider=a.provider,
                     max_turns=3 if preflight else a.max_turns,
                     max_budget_usd=0.05 if preflight else a.max_budget_usd, timeout_s=a.timeout)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
@@ -79,13 +102,22 @@ def cmd_run(a, preflight: bool = False) -> int:
     samples = 1 if preflight else a.samples
     jobs = [(s, case, arm) for s in range(samples) for case in cases for arm in arms]  # interleaved
     state = {"spent": 0.0, "n": 0, "stopped": False}
+    base_usage = openrouter_usage(key) if a.provider == "openrouter" else None
+    if a.provider == "openrouter" and base_usage is None:
+        raise SystemExit("cannot read OpenRouter usage — refusing to run without the budget of record")
+
+    def spent_now():
+        if base_usage is None:
+            return state["spent"]
+        u = openrouter_usage(key)
+        return state["spent"] if u is None else max(state["spent"], u - base_usage)
     sem = asyncio.Semaphore(max(1, a.concurrency))
     lock = asyncio.Lock()
     (out / "traces").mkdir(exist_ok=True)
 
     async def one(s, case, arm, f):
         async with sem:
-            if state["spent"] >= a.total_budget_usd:
+            if await asyncio.to_thread(spent_now) >= a.total_budget_usd:
                 state["stopped"] = True
                 return
             ws, cd, tr = await run_one(arm, case, s, cfg, key)
@@ -111,7 +143,9 @@ def cmd_run(a, preflight: bool = False) -> int:
 
     with rows_path.open("a", encoding="utf-8") as f:
         asyncio.run(all_jobs(f))
-    spent, n = state["spent"], state["n"]
+    spent, n = spent_now(), state["n"]
+    if base_usage is not None:
+        print("OpenRouter spend this invocation: $%.4f (SDK estimate: $%.4f)" % (spent, state["spent"]))
     if state["stopped"]:
         print("TOTAL BUDGET %.2f reached — %d of %d jobs not run" % (a.total_budget_usd, len(jobs) - n, len(jobs)),
               file=sys.stderr)
@@ -150,7 +184,8 @@ def main(argv=None) -> int:
     p.add_argument("--cases", type=Path, default=HERE / "cases")
     p.add_argument("--only", nargs="*", help="case ids")
     p.add_argument("--arms", default="bare,library")
-    p.add_argument("--model")
+    p.add_argument("--model", help="provider model id, e.g. anthropic/claude-sonnet-5.5 on OpenRouter")
+    p.add_argument("--provider", choices=["anthropic", "openrouter"], default="anthropic")
     p.add_argument("--samples", type=int, default=1)
     p.add_argument("--max-turns", type=int, default=40)
     p.add_argument("--max-budget-usd", type=float, default=1.00, help="per run")

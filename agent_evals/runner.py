@@ -29,6 +29,7 @@ class RunConfig:
     max_budget_usd: float = 1.00
     timeout_s: int = 900
     sota_root: Path = Path(".")
+    provider: str = "anthropic"
 
 
 @dataclass
@@ -52,7 +53,7 @@ def options_for(arm: Arm, case: Case, cfg: RunConfig, api_key: str):
     kwargs = dict(
         cwd=str(ws), model=cfg.model, max_turns=cfg.max_turns,
         max_budget_usd=cfg.max_budget_usd, setting_sources=["user"],
-        env=run_env(cd, api_key), allowed_tools=TOOLS, permission_mode="dontAsk",
+        env=run_env(cd, api_key, cfg.provider, cfg.model), allowed_tools=TOOLS, permission_mode="dontAsk",
         sandbox=SANDBOX, system_prompt={"type": "preset", "preset": "claude_code"},
     )
     return ws, cd, kwargs

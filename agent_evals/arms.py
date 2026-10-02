@@ -76,14 +76,28 @@ def build_config_dir(arm: Arm, sota_root: Path) -> Path:
     return d
 
 
-def run_env(config_dir: Path, api_key: str) -> dict[str, str]:
-    return {
+OPENROUTER_BASE = "https://openrouter.ai/api"
+
+
+def run_env(config_dir: Path, api_key: str, provider: str = "anthropic", model: str = "") -> dict[str, str]:
+    env = {
         "CLAUDE_CONFIG_DIR": str(config_dir),
         "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
         "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
         "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
-        "ANTHROPIC_API_KEY": api_key,
     }
+    if provider == "openrouter":
+        # OpenRouter's Claude Code guide (read 2026-10-02): base URL + AUTH_TOKEN, and
+        # ANTHROPIC_API_KEY explicitly blank. Every model class is pinned to the measured model
+        # so Claude Code's background calls cannot silently use (and bill) a different one.
+        env.update({"ANTHROPIC_BASE_URL": OPENROUTER_BASE, "ANTHROPIC_AUTH_TOKEN": api_key,
+                    "ANTHROPIC_API_KEY": ""})
+        for v in ("ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL",
+                  "ANTHROPIC_DEFAULT_HAIKU_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL"):
+            env[v] = model
+    else:
+        env["ANTHROPIC_API_KEY"] = api_key
+    return env
 
 
 def parse_arms(spec: str) -> list[Arm]:

@@ -60,6 +60,25 @@ the ceiling is a fact about the instrument, never about the treatment (rules/01 
   failure. If more than 5% of rows lack a result, the scoring is re-run on the kept
   workspaces before analysis.
 
+## Addendum 2 — 2026-10-02, still before any measurement run (operator decisions)
+
+Supersedes the pinned *model* and *budgets* rows above; the reasons are recorded here, not
+edited into the table.
+
+- **Provider: OpenRouter** (the Anthropic key was rejected by the API itself, HTTP 401). Calls
+  go through OpenRouter's Anthropic-compatible endpoint per its Claude Code guide; every model
+  class is pinned to the measured model. OpenRouter's guide says to stay on Anthropic models
+  for tool-use reliability, so only Anthropic models are candidates.
+- **Budget of record: OpenRouter's own spend** (`GET /api/v1/key` → `usage`, delta over the
+  invocation), not the SDK's estimate. **Total cap $50** for preflight + pilot + measurement.
+- **Model, by a cost-only rule fixed now:** a pilot of 12 runs — cases c01–c03 (the first three
+  ids, chosen by id, not by outcome) × 4 arms × 1 sample — on `anthropic/claude-sonnet-5.5`
+  measures mean OpenRouter cost per run, C. If 240 × C × 1.15 fits in the remaining budget, the
+  measurement uses Sonnet 5.5 with 3 samples. Otherwise `anthropic/claude-haiku-4.5`
+  (half the per-token price; assumed C/2) with 3 samples; and if that does not fit, 2 samples.
+  **Pilot pass rates are not looked at for this decision and pilot rows are excluded from the
+  analysis.**
+
 ## Deviations
 
 None yet.
