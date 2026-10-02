@@ -276,3 +276,10 @@ def test_openrouter_env_and_key_not_left_in_process(monkeypatch):
     assert cli._key(True, "openrouter") == "or-key"
     import os
     assert "OPENROUTER_API_KEY" not in os.environ          # popped: the agent cannot inherit it
+
+
+def test_analysis_excludes_hook_arm_where_hook_never_ran():
+    from agent_evals.analyze import excluded
+    assert excluded({"arm": "hook", "hook_ledger": False, "contamination": {}}) == "hook-treatment-mismatch"
+    assert excluded({"arm": "bare", "hook_ledger": True, "contamination": {}}) == "hook-treatment-mismatch"
+    assert excluded({"arm": "hook", "hook_ledger": True, "contamination": {}}) is None

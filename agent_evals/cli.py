@@ -81,6 +81,9 @@ def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
         "unverified_done": unverified_done(tr.tool_calls, tr.result, changed),
         "hidden": hidden_pass(case.dir, ws, unsafe_local=a.unsafe_local_scoring),
         "contamination": contamination(arm.library, tr.init, tr.tool_calls, tr.final_text, sota_skills),
+        # the hook's treatment check: it writes its ledger under .git/ when it runs at all.
+        # Without this a hook that silently never registered would read as "no effect" on H1.
+        "hook_ledger": (ws / ".git" / "sota-verified-done").is_dir(),
     }
 
 

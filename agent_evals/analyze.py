@@ -35,6 +35,8 @@ def excluded(row):
     c = row.get("contamination") or {}
     if c.get("contaminated") or c.get("treatment_present") is False:
         return "contaminated"
+    if "hook_ledger" in row and row["hook_ledger"] != ("hook" in row["arm"]):
+        return "hook-treatment-mismatch"     # hook arm where it never ran, or a ledger it shouldn't have
     return None
 
 
