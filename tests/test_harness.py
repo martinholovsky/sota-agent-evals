@@ -82,6 +82,7 @@ def test_arm_config_is_isolated_and_symmetric(arm, fake_sota):
     try:
         assert kw["setting_sources"] == ["user"]
         assert kw["env"]["CLAUDE_CONFIG_DIR"] == str(cd)
+        assert kw["env"]["HOME"].startswith(str(cd)) and not any((cd / "home").iterdir())
         for v in ("CLAUDE_CODE_DISABLE_AUTO_MEMORY", "ENABLE_CLAUDEAI_MCP_SERVERS",
                   "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"):
             assert v in kw["env"]
@@ -266,7 +267,7 @@ def test_runtime_failure_is_no_result_not_a_failed_run(tmp_path, monkeypatch):
 def test_openrouter_env_and_key_not_left_in_process(monkeypatch):
     from agent_evals import cli
     from agent_evals.arms import run_env
-    env = run_env(Path("/c"), "or-key", "openrouter", "anthropic/claude-sonnet-5.5")
+    env = run_env(Path(tempfile.mkdtemp()), "or-key", "openrouter", "anthropic/claude-sonnet-5.5")
     assert env["ANTHROPIC_BASE_URL"] == "https://openrouter.ai/api"
     assert env["ANTHROPIC_AUTH_TOKEN"] == "or-key" and env["ANTHROPIC_API_KEY"] == ""
     assert env["ANTHROPIC_DEFAULT_HAIKU_MODEL"] == "anthropic/claude-sonnet-5.5"

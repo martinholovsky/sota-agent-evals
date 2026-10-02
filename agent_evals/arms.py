@@ -80,7 +80,10 @@ OPENROUTER_BASE = "https://openrouter.ai/api"
 
 
 def run_env(config_dir: Path, api_key: str, provider: str = "anthropic", model: str = "") -> dict[str, str]:
+    home = config_dir / "home"          # the agent's HOME: empty, per run — never the operator's
+    home.mkdir(exist_ok=True)           # (the harness keeps the real HOME: podman needs it)
     env = {
+        "HOME": str(home),
         "CLAUDE_CONFIG_DIR": str(config_dir),
         "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
         "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
