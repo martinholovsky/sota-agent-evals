@@ -90,7 +90,10 @@ def cmd_run(a, preflight: bool = False) -> int:
         raise SystemExit("--model is required (model ids live in config, never in code)")
     cfg = RunConfig(model=a.model, sota_root=a.sota_root, provider=a.provider,
                     max_turns=3 if preflight else a.max_turns,
-                    max_budget_usd=0.05 if preflight else a.max_budget_usd, timeout_s=a.timeout)
+                    # 0.50, not 0.05: a ONE-word reply costs ~$0.10-0.13 through Claude Code (its
+                    # system prompt + tools on an uncached first turn; measured 2026-10-02), so the
+                    # old cap made the preflight unpassable by construction
+                    max_budget_usd=0.50 if preflight else a.max_budget_usd, timeout_s=a.timeout)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     rows_path = out / ("preflight.jsonl" if preflight else "runs.jsonl")
     sota_skills = sota_skill_names(a.sota_root)
