@@ -32,6 +32,12 @@ mean OpenRouter cost per run C; its pass rates are not used for any decision and
 excluded. Given B: **S = 3 if 240·C·1.15 ≤ B; else S = 2 if 160·C·1.15 ≤ B; else S = 1.**
 A preflight PASS and a sandbox-probe PASS are required immediately before the measurement.
 
+**Pilot result (2026-10-03, cost only — rows excluded as stated above):** 12/12 runs, 0 errors.
+OpenRouter usage delta $2.7005 → **C = $0.225/run**; the SDK's own estimate summed to $2.2680
+($0.189/run, ~16% low — re-derived 2026-10-04 from `results/v3-pilot/runs.jsonl`). The rule
+uses the OpenRouter figure. Projected spend: S=3 $62.10, S=2 $41.40, S=1 $20.70. **Awaiting the
+operator's B** (and an account top-up: credit remaining $18.53 on 2026-10-04, `GET /api/v1/credits`).
+
 ## Exclusions and validity (decided now)
 
 - Errored, contaminated and hook-mismatch rows are excluded and counted; more than 10% excluded

@@ -70,7 +70,7 @@ fails otherwise. **Run preflight before every measurement.**
 ```sh
 uv sync && uv run --group dev pytest -q          # harness tests: no key, no API
 uv run python -m agent_evals dry-run   --sota-root ~/Github/SOTA-skills
-export ANTHROPIC_API_KEY=...                       # read from the environment only
+export ANTHROPIC_API_KEY=...       # environment only; OPENROUTER_API_KEY with --provider openrouter
 uv run python -m agent_evals preflight --sota-root ~/Github/SOTA-skills --model <model-id>
 uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model <model-id> \
     --arms bare,library,hook,library+hook --samples 3 --total-budget-usd 20
@@ -78,17 +78,17 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
 
 ## Status
 
-- **Instrument only.** `cases/` holds 3 hand-written cases: a shake-down set, below the 20-case
-  floor (SOTA-skills `sota-llm-engineering` rules/01). **No lift may be reported from it.**
-  A measurement set needs ≥20 cases written before any run, with a selection rule in its header,
-  and a frozen [pre-registration](PRE-REGISTRATION.md).
-- Harness tests: 22, each scorer shown a known-good and a known-bad. Container scoring verified
-  on c01 (reference passes 3/3, untouched start fails).
+- Three case sets, each 20 cases with a selection rule in its header and its own frozen
+  pre-registration: `cases/` (v1), `cases-v2/` (v2), `cases-v3/` (v3 — 20 change tasks against
+  one multi-module app in `cases-v3/base/`, built and checked by `cases-v3/build.py --verify`).
+- Harness tests: `uv run --group dev pytest -q`, each scorer shown a known-good and a known-bad.
 - **First live run, 2026-10-02: compromised** (credit outage, saturated cases) — see
   [reports/2026-10-02/REPORT.md](reports/2026-10-02/REPORT.md).
 - **v2 run, 2026-10-02: clean (240/240), all hypotheses NOT SUPPORTED, near-saturated**; the hook
   changes behaviour (unpiped verification 0% → 100%) but no outcome difference is measurable on
   these tasks — see [reports/2026-10-02-v2/REPORT.md](reports/2026-10-02-v2/REPORT.md).
+- **v3: frozen, pilot done (cost only), measurement not run** — awaiting the operator's budget;
+  see [PRE-REGISTRATION-v3.md](PRE-REGISTRATION-v3.md).
 
 ## Licence
 

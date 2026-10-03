@@ -8,7 +8,7 @@ rows regardless.
 |---|---|
 | model | `anthropic/claude-sonnet-5.5` via OpenRouter |
 | runs | 240 (20 cases × 4 arms × 3 samples), concurrency 4 |
-| spend | **$12.42** (OpenRouter delta = SDK estimate to the cent) |
+| spend | **$12.42** (OpenRouter delta = SDK estimate to the cent); 2026-10-04: did not hold for the v3 pilot (OpenRouter $2.70 vs SDK $2.27) — OpenRouter is the record |
 | errored | **137 / 240** — every one OpenRouter `402`: *"would exceed your available credits"* |
 | valid | 103: bare 30, library 24, hook 26, library+hook 23 |
 | preflight | PASS immediately before; pilot treatment checks all correct |

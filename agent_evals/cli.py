@@ -5,7 +5,8 @@
     python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model <id> \\
         --arms bare,library,hook,library+hook --samples 3 --out results/<date>
 
-The API key is read from ANTHROPIC_API_KEY only. It is never logged, and the agent's own shell
+The API key is read from the environment only: ANTHROPIC_API_KEY, or OPENROUTER_API_KEY with
+--provider openrouter. It is never logged, and the agent's own shell
 cannot read it (CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1).
 """
 from __future__ import annotations

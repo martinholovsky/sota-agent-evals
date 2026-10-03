@@ -9,7 +9,7 @@ that is clear is *behavioural*, not an outcome: the hook makes the agent verify 
 | pre-registration | [PRE-REGISTRATION-v2.md](../../PRE-REGISTRATION-v2.md), frozen before any v2 run |
 | model | `anthropic/claude-sonnet-5.5` via OpenRouter |
 | runs | 240 / 240 (20 cases × 4 arms × 3 samples) — **0 errors, 0 exclusions** |
-| spend | **$26.60** (OpenRouter delta = SDK estimate); v2 total incl. pilot ≈ $28.0 |
+| spend | **$26.60** (OpenRouter delta = SDK estimate); v2 total incl. pilot ≈ $28.0; 2026-10-04: did not hold for the v3 pilot (OpenRouter $2.70 vs SDK $2.27) — OpenRouter is the record |
 | treatment checks | library arms list the skills, bare/hook uncontaminated, hook ledger in exactly the hook arms — all 240 |
 
 ## Pre-registered analysis (all 20 cases)
