@@ -23,7 +23,9 @@ lists none, before any measurement is trusted.
 from __future__ import annotations
 
 import json
+import math
 import os
+import re
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -35,6 +37,8 @@ class Arm:
     name: str
     library: bool          # SOTA-skills skills/ installed into the run's user config
     hook: bool             # scripts/verified-done-hook.py registered on its four events
+    routing: bool = False  # the installer's routing layer: UserPromptSubmit hook, CLAUDE.md
+                           # directive and listing-budget fraction, read from --sota-root's install.sh
 
 
 ARMS = {
@@ -42,7 +46,30 @@ ARMS = {
     "library": Arm("library", library=True, hook=False),
     "hook": Arm("hook", library=False, hook=True),
     "library+hook": Arm("library+hook", library=True, hook=True),
+    # v4 (2026-10-08): library + the routing layer a real `install.sh` install has. Every library
+    # arm before v4 invoked ZERO skills (0 of 166 runs): it had skills and no routing layer.
+    "installed": Arm("installed", library=True, hook=False, routing=True),
 }
+
+
+def routing_layer(sota_root: Path) -> tuple[str, str, float]:
+    """(UserPromptSubmit command, CLAUDE.md block, skillListingBudgetFraction), all read from the
+    pinned checkout's scripts/install.sh, never copied here. Fails closed: an empty routing layer
+    would be the very defect this arm exists to remove."""
+    src = (sota_root / "scripts" / "install.sh").read_text(encoding="utf-8")
+    m = re.search(r"^readonly HOOK_CMD=\"(echo '.*')\"$", src, re.M)
+    b = re.search(r"^emit_routing_block\(\) \{\n  cat <<'MD'\n(.*?)\nMD\n\}", src, re.M | re.S)
+    if not m or not b:
+        raise SystemExit("installed arm: cannot read HOOK_CMD / emit_routing_block from %s" % sota_root)
+    need = 0
+    for sk in (sota_root / "skills").iterdir():
+        f = sk / "SKILL.md"
+        if f.is_file():
+            d = re.search(r"^description:\s*(.*?)\n(?=[a-z_]+:|---)", f.read_text(encoding="utf-8"), re.S | re.M)
+            need += len(" ".join(d.group(1).split())) if d else 0
+    need = int(need * 1.25)                 # install.sh's +25% built-in allowance
+    frac = min(0.10, max(0.02, math.ceil(need / 800000 * 100) / 100))   # install.sh's formula
+    return m.group(1), b.group(1) + "\n", frac
 
 HOOK_EVENTS = {"SessionStart": None, "PostToolUse": "Bash", "PostToolUseFailure": "Bash", "Stop": None}
 
@@ -56,6 +83,10 @@ def settings_for(arm: Arm, sota_root: Path) -> dict:
                       **({"matcher": m} if m else {}))]
             for ev, m in HOOK_EVENTS.items()
         }
+    if arm.routing:
+        hook_cmd, _block, frac = routing_layer(sota_root)
+        s.setdefault("hooks", {})["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": hook_cmd}]}]
+        s["skillListingBudgetFraction"] = frac
     return s
 
 
@@ -64,6 +95,8 @@ def build_config_dir(arm: Arm, sota_root: Path) -> Path:
     The prefix is neutral on purpose — an agent that can read its path must not learn its arm."""
     d = Path(tempfile.mkdtemp(prefix="c-"))
     (d / "settings.json").write_text(json.dumps(settings_for(arm, sota_root), indent=2))
+    if arm.routing:
+        (d / "CLAUDE.md").write_text(routing_layer(sota_root)[1])   # the global directive
     skills = d / "skills"
     skills.mkdir()
     if arm.library:

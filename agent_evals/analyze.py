@@ -20,6 +20,15 @@ HYPOTHESES_V2 = [  # PRE-REGISTRATION-v2.md
     ("H3 hook vs bare: hidden_pass", "hidden_pass", "hook", "bare", +1),
 ]
 
+HYPOTHESES_V4 = [  # PRE-REGISTRATION-v4.md
+    ("H4 installed vs bare: hidden_pass", "hidden_pass", "installed", "bare", +1),
+    ("H5 installed vs library: hidden_pass (the routing layer's own effect)", "hidden_pass", "installed", "library", +1),
+]
+# The manipulation check that v1-v3 lacked: an arm meant to apply the library must actually
+# INVOKE it. Below this share of runs with >= 1 Skill call, the treatment did not happen and
+# every hypothesis on that arm is reported as MANIPULATION FAILED, never as a null.
+MANIPULATION_MIN = 0.5
+
 HYPOTHESES = [  # v1 (PRE-REGISTRATION.md) — kept unchanged so the v1 analysis reproduces
     # (name, metric, treatment, control, direction: +1 = treatment should be higher)
     ("H1a hook vs bare", "unverified_done", "hook", "bare", -1),
@@ -74,7 +83,7 @@ def bootstrap_diff(t: dict, c: dict, iters=10000, seed=0):
             "ci95": (means[int(0.025 * iters)], means[int(0.975 * iters) - 1])}
 
 
-def analyze(rows, hypotheses=None):
+def analyze(rows, hypotheses=None, manipulation_check=False):
     hypotheses = hypotheses or HYPOTHESES
     out = {"rows": len(rows), "excluded": defaultdict(int), "arms": {}, "hypotheses": []}
     for r in rows:
@@ -99,15 +108,29 @@ def analyze(rows, hypotheses=None):
             verdict = "SUPPORTED" if lo > -0.10 else "NOT SUPPORTED"
         out["hypotheses"].append(dict(b, name=name, metric=metric, verdict=verdict))
     out["excluded"] = dict(out["excluded"])
+    # skill-call rate per library arm: share of non-excluded runs with >= 1 SOTA Skill call
+    calls = defaultdict(list)
+    for r in rows:
+        c = r.get("contamination") or {}
+        if not excluded(r) and c.get("treatment_present"):
+            calls[r["arm"]].append(1.0 if (c.get("skill_calls") or 0) > 0 else 0.0)
+    out["skill_call_rate"] = {a: round(sum(v) / len(v), 3) for a, v in calls.items() if v}
+    # v4 only: v1-v3 were pre-registered without it, and their frozen analyses are not rewritten.
+    failed = {a for a, rate in out["skill_call_rate"].items()
+              if manipulation_check and rate < MANIPULATION_MIN}
+    for h in out["hypotheses"]:
+        t = next((x[2] for x in hypotheses if x[0] == h["name"]), None)
+        if t in failed:
+            h["verdict"] = "MANIPULATION FAILED"
     return out
 
 
 def main(argv=None):
     args = argv or sys.argv[1:]
-    hyps = HYPOTHESES_V2 if "--v2" in args else HYPOTHESES
-    path = [a for a in args if a != "--v2"][0]
+    hyps = HYPOTHESES_V4 if "--v4" in args else HYPOTHESES_V2 if "--v2" in args else HYPOTHESES
+    path = [a for a in args if a not in ("--v2", "--v4")][0]
     rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
-    print(json.dumps(analyze(rows, hyps), indent=2, default=str))
+    print(json.dumps(analyze(rows, hyps, manipulation_check="--v4" in args), indent=2, default=str))
 
 
 if __name__ == "__main__":

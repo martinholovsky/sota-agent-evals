@@ -68,17 +68,23 @@ reliably. **The next run must add an arm that installs the library as `install.s
 skills plus routing hook plus directive. It should also report skill-call counts as a primary
 manipulation check, not leave them inside a contamination field.
 
-## Spend — two meters disagree
+## Spend
 
-- **Runner's reported spend:** $18.0902. That is the larger of the SDK's estimate and the
-  OpenRouter key's usage delta, so here it is the **SDK estimate**. The runner nonetheless
-  prints it under the label "OpenRouter spend": a labelling defect to fix.
-- **Account usage:** moved **$4.0349** over preflight, probe and run together, so about **$3.77**
-  for the run. The key's `usage_daily` agrees, as $10.12 = the same day's $6.08 SOTA-skills
-  placebo run + $4.03.
-- **So the SDK over-estimated by about 4.8×** on this run. The v3 pilot found it **16% low**.
-  The mechanism is unverified; prompt-cache pricing is a guess. The budget guard used the
-  larger figure, so it erred on the safe side.
+**Corrected 2026-10-08, the same evening. The first version of this section was wrong.** It said
+the account had moved only $4.03, the run cost "~$3.77", and the SDK over-estimated by "~4.8×".
+That reading was taken right after the run, and **OpenRouter's usage counter lags**. Re-read
+about an hour later, with only ~$0.19 of probes spent in between, the account showed
+**$12.8952** used since before the preflight. Taking out the preflight ($0.2280), the sandbox
+probe ($0.0392) and two listing probes ($0.1888) leaves **≈ $12.44 for the 80-run measurement**,
+or about $0.155 per run. The day's key `usage_daily` (`$18.98` = the same day's $6.08
+SOTA-skills placebo + $12.90) reconciles with it.
+
+- **SDK estimate:** $18.0902, so it ran **≈ 1.45× high** on this run. The v3 pilot found it 16%
+  low; the direction is not stable, and the mechanism is unverified.
+- **Labelling defect:** the runner prints the larger of its two meters under the label
+  "OpenRouter spend". Here that was the SDK estimate.
+- **The lesson for every report here:** read the account after the counter settles, and take two
+  readings, never one taken immediately after the run.
 
 ## Limits
 

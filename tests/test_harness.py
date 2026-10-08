@@ -28,6 +28,9 @@ def fake_sota(tmp_path_factory):
         (r / "skills" / n / "SKILL.md").write_text("---\nname: %s\ndescription: x\n---\n" % n)
     (r / "scripts").mkdir()
     (r / "scripts" / "verified-done-hook.py").write_text("")
+    (r / "scripts" / "install.sh").write_text(   # the two shapes routing_layer() reads
+        "readonly HOOK_CMD=\"echo 'invoke the sota skill FIRST'\"\n"
+        "emit_routing_block() {\n  cat <<'MD'\n<!-- routing block -->\nMD\n}\n")
     return r
 
 
@@ -96,7 +99,7 @@ def test_arm_config_is_isolated_and_symmetric(arm, fake_sota):
         skills = {p.name for p in (cd / "skills").iterdir()}
         assert skills == ({"sota", "sota-shell-scripting"} if arm.library else set())
         settings = json.loads((cd / "settings.json").read_text())
-        assert ("hooks" in settings) == arm.hook
+        assert ("hooks" in settings) == (arm.hook or arm.routing)
         if arm.hook:
             assert set(settings["hooks"]) == {"SessionStart", "PostToolUse", "PostToolUseFailure", "Stop"}
         for p in (str(ws), str(cd)):
@@ -326,3 +329,46 @@ def test_parse_probe_reads_tool_output_not_the_reply():
     # a model that only CLAIMS the result, without running Bash, is "did not run"
     assert parse_probe([{"name": "Read", "result": "KEYVARS=0"}])["ran"] is False
     assert parse_probe([])["ran"] is False
+
+
+# ---- v4: the installed arm and the manipulation check -------------------------------------
+def test_installed_arm_has_the_routing_layer(fake_sota):
+    from agent_evals.arms import build_config_dir
+    d = build_config_dir(A.ARMS["installed"], fake_sota)
+    try:
+        st = json.loads((d / "settings.json").read_text())
+        ups = st["hooks"]["UserPromptSubmit"][0]["hooks"][0]["command"]
+        assert ups == "echo 'invoke the sota skill FIRST'"
+        assert (d / "CLAUDE.md").read_text().startswith("<!-- routing block -->")
+        assert 0.02 <= st["skillListingBudgetFraction"] <= 0.10
+        assert {p.name for p in (d / "skills").iterdir()} == {"sota", "sota-shell-scripting"}
+    finally:
+        A.cleanup(d)
+
+
+def test_routing_layer_fails_closed(tmp_path):
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "install.sh").write_text("# no HOOK_CMD here\n")
+    (tmp_path / "skills").mkdir()
+    with pytest.raises(SystemExit):
+        A.routing_layer(tmp_path)
+
+
+def test_manipulation_check_is_v4_only():
+    from agent_evals.analyze import analyze, HYPOTHESES_V2, HYPOTHESES_V4
+    def row(arm, case, ok, calls):
+        c = ({"treatment_present": True, "listed": 2, "skill_calls": calls} if arm != "bare"
+             else {"contaminated": False, "listed": 0, "skill_calls": 0, "vocab": False})
+        return {"arm": arm, "case": case, "hidden": {"ok": ok}, "contamination": c,
+                "hook_ledger": False, "unverified_done": False, "shipped_broken": False}
+    rows = [row(a, "t%d" % i, ok, 0) for i in range(4) for a, ok in
+            (("bare", False), ("library", True), ("installed", True))]
+    v4 = analyze(rows, HYPOTHESES_V4, manipulation_check=True)
+    assert v4["skill_call_rate"] == {"library": 0.0, "installed": 0.0}
+    assert {h["verdict"] for h in v4["hypotheses"]} == {"MANIPULATION FAILED"}
+    used = [dict(r, contamination=dict(r["contamination"], skill_calls=1)) if r["arm"] == "installed" else r
+            for r in rows]
+    assert analyze(used, HYPOTHESES_V4, manipulation_check=True)["hypotheses"][0]["verdict"] == "SUPPORTED"
+    v2 = analyze(rows, HYPOTHESES_V2)   # frozen analyses are never rewritten
+    assert "MANIPULATION FAILED" not in {h.get("verdict") for h in v2["hypotheses"]}
+
