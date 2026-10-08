@@ -87,8 +87,9 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
 - **v2 run, 2026-10-02: clean (240/240), all hypotheses NOT SUPPORTED, near-saturated**; the hook
   changes behaviour (unpiped verification 0% → 100%) but no outcome difference is measurable on
   these tasks — see [reports/2026-10-02-v2/REPORT.md](reports/2026-10-02-v2/REPORT.md).
-- **v3: frozen, pilot done (cost only), measurement not run** — awaiting the operator's budget;
-  see [PRE-REGISTRATION-v3.md](PRE-REGISTRATION-v3.md).
+- **v3 measured 2026-10-08: 80/80 clean, ceiling (hidden_pass 1.00 in every arm), every
+  comparison uninformative — and the library arms never invoked a skill (0 of 166 library-arm runs
+  since v2)**; see [reports/2026-10-08-v3](reports/2026-10-08-v3/REPORT.md).
 
 ## Licence
 
