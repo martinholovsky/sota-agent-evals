@@ -38,6 +38,15 @@ OpenRouter usage delta $2.7005 → **C = $0.225/run**; the SDK's own estimate su
 uses the OpenRouter figure. Projected spend: S=3 $62.10, S=2 $41.40, S=1 $20.70. **Awaiting the
 operator's B** (and an account top-up: credit remaining $18.53 on 2026-10-04, `GET /api/v1/credits`).
 
+**Operator's B, set 2026-10-08 before any measurement spend: B = $20.00 → S = 1** (80·C·1.15 =
+$20.70 is the S=1 projection; 160·C·1.15 = $41.40 > B). B is bounded by the account: credit was
+$26.88 on 2026-10-08, and the runner checks the budget only before launching a job, so 4 jobs in
+flight at the $1.50 cap can overshoot by up to $6. B + $6 stays under the credit, so the v1
+failure mode (a mid-run credit outage) cannot recur. Expected spend 80 × $0.225 = $18.00. If
+per-run cost runs more than ~11% above the pilot, the run stops at B, and the shortfall is
+reported as an incomplete run rather than as data. S=1 means one run per case × arm: 20 paired
+cases per comparison.
+
 ## Exclusions and validity (decided now)
 
 - Errored, contaminated and hook-mismatch rows are excluded and counted; more than 10% excluded
