@@ -92,6 +92,9 @@ table above where they differ:**
   start, and the credit is re-checked between them. B for the whole measurement is **$15**. An
   invocation that cannot start for lack of credit leaves the measurement **incomplete**,
   reported as such.
+  - **Recorded 2026-10-09, after chunk 1 and before any chunk-2 run:** the operator's auto
+    top-up fires only at ≤ $2, and the credit stood at $5.12. So chunk 2 runs as **2a (t11–t15,
+    cap $4)** and **2b (t16–t20)**. Configuration and arms are unchanged; only the split moves.
 - **Primary:** the **manipulation check** (installed skill-call rate ≥ 0.5), then **H4**
   (installed vs bare, hidden_pass).
 - **Descriptive, decided now:** routing **depth**, as the share of `installed` runs that invoke
