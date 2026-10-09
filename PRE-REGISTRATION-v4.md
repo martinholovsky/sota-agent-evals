@@ -77,4 +77,24 @@ readings: the v3 report's first reading was wrong for exactly that reason.
   step 4 to list the files step 2 loaded and to fail on an empty list. That is the very gap pilot
   (c) shows: the router is invoked, and nothing it routes to is loaded.
 
-The model and pin decision is the operator's and is pending.
+**Operator decision, 2026-10-09, recorded before any measurement. It supersedes the pinned
+table above where they differ:**
+- **Model:** `anthropic/claude-sonnet-5.5`. Haiku cannot test the rules because it does not
+  invoke them.
+- **Arms:** `bare` and `installed`. `library` is dropped: in v1–v3 it never invoked a skill
+  (0/166), so H5 is not tested.
+- **SOTA-skills pin:** `main` @ `1d19530`. It contains #517 (router BUILD step 4 lists step 2's
+  files and fails on an empty list), so v4 tests that router. The `installed` arm's directive is
+  produced by running that commit's own `emit_routing_block`.
+- **Per-run cap:** back to **$1.50**.
+- **Budget:** credit was $10.06 and auto top-up had not yet fired, so the 40 runs go in two
+  invocations of 10 cases each (t01–t10, then t11–t20). Each is capped at ≤ the credit at its
+  start, and the credit is re-checked between them. B for the whole measurement is **$15**. An
+  invocation that cannot start for lack of credit leaves the measurement **incomplete**,
+  reported as such.
+- **Primary:** the **manipulation check** (installed skill-call rate ≥ 0.5), then **H4**
+  (installed vs bare, hidden_pass).
+- **Descriptive, decided now:** routing **depth**, as the share of `installed` runs that invoke
+  any skill besides `sota`, and the share that `Read` a rules file. Pilot (c) on the old router
+  was 0/3 on both. hidden_pass is expected near ceiling, so the ceiling rule likely applies to
+  H4, and depth is where #517's effect would show.
