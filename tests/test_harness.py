@@ -30,7 +30,10 @@ def fake_sota(tmp_path_factory):
     (r / "scripts" / "verified-done-hook.py").write_text("")
     (r / "scripts" / "install.sh").write_text(   # the two shapes routing_layer() reads
         "readonly HOOK_CMD=\"echo 'invoke the sota skill FIRST'\"\n"
-        "emit_routing_block() {\n  cat <<'MD'\n<!-- routing block -->\nMD\n}\n")
+        "readonly RT_END=\"<!-- end -->\"\n"
+        "emit_routing_block() {\n  # a comment line, as main's installer has\n  cat <<'MD'\n"
+        "<!-- routing block -->\nconsult the `sota` router skill first\nMD\n"
+        "  printf 'router file: %s\\n' \"$SKILLS_SRC/sota/SKILL.md\"\n  printf '%s\\n' \"$RT_END\"\n}\n")
     return r
 
 
@@ -339,7 +342,9 @@ def test_installed_arm_has_the_routing_layer(fake_sota):
         st = json.loads((d / "settings.json").read_text())
         ups = st["hooks"]["UserPromptSubmit"][0]["hooks"][0]["command"]
         assert ups == "echo 'invoke the sota skill FIRST'"
-        assert (d / "CLAUDE.md").read_text().startswith("<!-- routing block -->")
+        md = (d / "CLAUDE.md").read_text()
+        assert md.startswith("<!-- routing block -->") and md.rstrip().endswith("<!-- end -->")
+        assert str(d / "skills" / "sota" / "SKILL.md") in md   # the installer's own function ran
         assert 0.02 <= st["skillListingBudgetFraction"] <= 0.10
         assert {p.name for p in (d / "skills").iterdir()} == {"sota", "sota-shell-scripting"}
     finally:

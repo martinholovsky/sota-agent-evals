@@ -52,15 +52,28 @@ ARMS = {
 }
 
 
-def routing_layer(sota_root: Path) -> tuple[str, str, float]:
-    """(UserPromptSubmit command, CLAUDE.md block, skillListingBudgetFraction), all read from the
-    pinned checkout's scripts/install.sh, never copied here. Fails closed: an empty routing layer
-    would be the very defect this arm exists to remove."""
+def routing_layer(sota_root: Path, skills_dir: Path | None = None) -> tuple[str, str, float]:
+    """(UserPromptSubmit command, CLAUDE.md block, skillListingBudgetFraction), all produced by the
+    pinned checkout's scripts/install.sh, never copied here. The directive block is the output of
+    install.sh's OWN `emit_routing_block`, executed in a clean bash with only the variables it
+    reads (RT_END from that file, SKILLS_SRC = the run's skills dir) — so a later installer that
+    reshapes the function (main's added a router-path line) is reproduced, not re-parsed. Fails
+    closed: an empty routing layer would be the very defect this arm exists to remove."""
+    import subprocess
     src = (sota_root / "scripts" / "install.sh").read_text(encoding="utf-8")
     m = re.search(r"^readonly HOOK_CMD=\"(echo '.*')\"$", src, re.M)
-    b = re.search(r"^emit_routing_block\(\) \{\n  cat <<'MD'\n(.*?)\nMD\n\}", src, re.M | re.S)
-    if not m or not b:
+    fn = re.search(r"^emit_routing_block\(\) \{\n.*?\n\}\n", src, re.M | re.S)
+    rt_end = re.search(r"^readonly RT_END=(\".*\")$", src, re.M)
+    if not m or not fn:
         raise SystemExit("installed arm: cannot read HOOK_CMD / emit_routing_block from %s" % sota_root)
+    script = "set -euo pipefail\n%sSKILLS_SRC=%s\n%s\nemit_routing_block\n" % (
+        ("RT_END=%s\n" % rt_end.group(1)) if rt_end else "",
+        json.dumps(str(skills_dir or (sota_root / "skills"))), fn.group(0))
+    p = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+    block = p.stdout
+    if p.returncode != 0 or "sota" not in block or "router" not in block:
+        raise SystemExit("installed arm: emit_routing_block from %s failed (rc=%d): %s"
+                         % (sota_root, p.returncode, p.stderr[-300:]))
     need = 0
     for sk in (sota_root / "skills").iterdir():
         f = sk / "SKILL.md"
@@ -69,7 +82,8 @@ def routing_layer(sota_root: Path) -> tuple[str, str, float]:
             need += len(" ".join(d.group(1).split())) if d else 0
     need = int(need * 1.25)                 # install.sh's +25% built-in allowance
     frac = min(0.10, max(0.02, math.ceil(need / 800000 * 100) / 100))   # install.sh's formula
-    return m.group(1), b.group(1) + "\n", frac
+    return m.group(1), block, frac
+
 
 HOOK_EVENTS = {"SessionStart": None, "PostToolUse": "Bash", "PostToolUseFailure": "Bash", "Stop": None}
 
@@ -95,8 +109,6 @@ def build_config_dir(arm: Arm, sota_root: Path) -> Path:
     The prefix is neutral on purpose — an agent that can read its path must not learn its arm."""
     d = Path(tempfile.mkdtemp(prefix="c-"))
     (d / "settings.json").write_text(json.dumps(settings_for(arm, sota_root), indent=2))
-    if arm.routing:
-        (d / "CLAUDE.md").write_text(routing_layer(sota_root)[1])   # the global directive
     skills = d / "skills"
     skills.mkdir()
     if arm.library:
@@ -106,6 +118,8 @@ def build_config_dir(arm: Arm, sota_root: Path) -> Path:
         for sk in sorted(src.iterdir()):
             if (sk / "SKILL.md").is_file():
                 shutil.copytree(sk, skills / sk.name)   # a copy: the run cannot edit the library
+    if arm.routing:   # after the copy: the block names the router file inside THIS run's skills/
+        (d / "CLAUDE.md").write_text(routing_layer(sota_root, skills)[1])   # the global directive
     return d
 
 
