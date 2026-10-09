@@ -86,7 +86,7 @@ SOTA-skills placebo + $12.90) reconciles with it.
 - **The lesson for every report here:** read the account after the counter settles, and take two
   readings, never one taken immediately after the run.
 
-**Settled figure, 2026-10-09 (supersedes the ≈ $12.44 above, itself read too early):**
+**Settled figure, 2026-10-09 (supersedes the ≈ $12.44 and the ≈ 1.45× above, both read too early):**
 - **Account:** used read 838.5980 on the morning of 2026-10-09, about 10 h after the run, against
   823.1179 before v3's preflight: **$15.48 in all**.
 - **Taking out:** v3's preflight ($0.228) and sandbox probe ($0.039), two listing probes ($0.189)

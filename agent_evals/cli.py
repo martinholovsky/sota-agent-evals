@@ -123,6 +123,10 @@ def cmd_run(a, preflight: bool = False) -> int:
     if preflight:   # a prompt a working setup finishes in ONE turn: success is then observable
         from .workspace import Case
         cases = [Case(cases[0].id, cases[0].dir, "Reply with the single word OK. Do not use any tools.")]
+    # TODO(2026-10-09): preflight IGNORES --arms and always runs bare + library, so a new arm
+    # (v4's `installed`) is never exercised before a measurement -- v4 needed a separate smoke run
+    # to find that its $0.75 cap was too low. Exercise every arm in --arms, keeping bare + library
+    # as the isolation controls.
     arms = [ARMS["bare"], ARMS["library"]] if preflight else parse_arms(a.arms)
     samples = 1 if preflight else a.samples
     jobs = [(s, case, arm) for s in range(samples) for case in cases for arm in arms]  # interleaved
@@ -176,7 +180,11 @@ def cmd_run(a, preflight: bool = False) -> int:
         asyncio.run(all_jobs(f))
     spent, n = spent_now(), state["n"]
     if base_usage is not None:
-        print("OpenRouter spend this invocation: $%.4f (SDK estimate: $%.4f)" % (spent, state["spent"]))
+        # The guard's figure is max(SDK estimate, OpenRouter key-usage delta). The key counter lags
+        # by HOURS (2026-10-08/09), so right after a run this is usually the SDK estimate; it was
+        # printed as "OpenRouter spend" until 2026-10-09, which read as the account figure.
+        print("spend this invocation (budget-guard figure, max of SDK estimate and OpenRouter key delta): "
+              "$%.4f (SDK estimate: $%.4f) — the account's own figure settles hours later" % (spent, state["spent"]))
     if state["stopped"]:
         print("TOTAL BUDGET %.2f reached — %d of %d jobs not run" % (a.total_budget_usd, len(jobs) - n, len(jobs)),
               file=sys.stderr)

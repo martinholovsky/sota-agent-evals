@@ -94,7 +94,9 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
   the manipulation check passed, with **20/20 `installed` runs invoking a skill** (0/166 before the
   routing layer). H4 hit the ceiling (1.00 both arms) and is uninformative. The routing chain
   mostly stops at the router: 3/20 go past it, and **0/20 read a rules file**. See
-  [reports/2026-10-09-v4](reports/2026-10-09-v4/REPORT.md).
+  [reports/2026-10-09-v4](reports/2026-10-09-v4/REPORT.md). **Open:** the report's account-spend
+  figure is pending until OpenRouter's lagging counter settles (SDK estimate $13.87); fill it
+  from two readings taken hours apart.
 
 ## Licence
 
