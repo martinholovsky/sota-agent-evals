@@ -86,6 +86,14 @@ SOTA-skills placebo + $12.90) reconciles with it.
 - **The lesson for every report here:** read the account after the counter settles, and take two
   readings, never one taken immediately after the run.
 
+**Settled figure, 2026-10-09 (supersedes the ≈ $12.44 above, itself read too early):**
+- **Account:** used read 838.5980 on the morning of 2026-10-09, about 10 h after the run, against
+  823.1179 before v3's preflight: **$15.48 in all**.
+- **Taking out:** v3's preflight ($0.228) and sandbox probe ($0.039), two listing probes ($0.189)
+  and v4's first preflight ($0.402).
+- **That leaves ≈ $14.62 for the 80-run measurement.** The SDK's $18.09 was therefore ≈ 1.24× high.
+- Even this figure was read without a second confirming reading; treat it as ±$0.5.
+
 ## Limits
 
 - S = 1: one run per case × arm.

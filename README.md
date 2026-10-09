@@ -90,6 +90,11 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
 - **v3 measured 2026-10-08: 80/80 clean, ceiling (hidden_pass 1.00 in every arm), every
   comparison uninformative — and the library arms never invoked a skill (0 of 166 library-arm runs
   since v2)**; see [reports/2026-10-08-v3](reports/2026-10-08-v3/REPORT.md).
+- **v4 measured 2026-10-09 (`sonnet-5.5`, `bare` vs `installed`, SOTA-skills `main` @ `1d19530`):**
+  the manipulation check passed, with **20/20 `installed` runs invoking a skill** (0/166 before the
+  routing layer). H4 hit the ceiling (1.00 both arms) and is uninformative. The routing chain
+  mostly stops at the router: 3/20 go past it, and **0/20 read a rules file**. See
+  [reports/2026-10-09-v4](reports/2026-10-09-v4/REPORT.md).
 
 ## Licence
 

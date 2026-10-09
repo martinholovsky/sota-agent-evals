@@ -1,0 +1,39 @@
+{
+  "rows": 46,
+  "excluded": {
+    "error:installed": 3,
+    "error:bare": 3
+  },
+  "arms": {
+    "bare": {
+      "hidden_pass": 1.0,
+      "unverified_done": 1.0,
+      "shipped_broken": 0.0
+    },
+    "installed": {
+      "hidden_pass": 1.0,
+      "unverified_done": 1.0,
+      "shipped_broken": 0.0
+    }
+  },
+  "hypotheses": [
+    {
+      "n_cases": 20,
+      "diff": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "name": "H4 installed vs bare: hidden_pass",
+      "metric": "hidden_pass",
+      "verdict": "NOT SUPPORTED"
+    },
+    {
+      "name": "H5 installed vs library: hidden_pass (the routing layer's own effect)",
+      "verdict": "NO DATA"
+    }
+  ],
+  "skill_call_rate": {
+    "installed": 1.0
+  }
+}
