@@ -95,6 +95,17 @@ table above where they differ:**
   - **Recorded 2026-10-09, after chunk 1 and before any chunk-2 run:** the operator's auto
     top-up fires only at ≤ $2, and the credit stood at $5.12. So chunk 2 runs as **2a (t11–t15,
     cap $4)** and **2b (t16–t20)**. Configuration and arms are unchanged; only the split moves.
+  - **Chunk 2a (2026-10-09): 6 of 10 rows errored with OpenRouter `402 … would exceed your
+    available credits given your current in-flight requests`.** The rows are t12 installed,
+    t13 bare, t14 bare+installed and t15 bare+installed.
+    - **Cause:** OpenRouter reserves credit for each in-flight request. With 4 concurrent
+      sessions, the reservations exceeded the ~$5 balance while the shown balance stayed above
+      the $2 auto top-up trigger, so the top-up could not help. These are infrastructure
+      failures, not observations.
+    - **Decided before any re-run:** the six jobs are re-run unchanged once the account shows
+      enough headroom for the reservations (≥ $15), and the errored rows are kept in the report
+      and counted. Any job whose re-run errors for any reason stays excluded. The 4 valid 2a
+      rows stand. No result is selected: every original row is reported.
 - **Primary:** the **manipulation check** (installed skill-call rate ≥ 0.5), then **H4**
   (installed vs bare, hidden_pass).
 - **Descriptive, decided now:** routing **depth**, as the share of `installed` runs that invoke
