@@ -54,4 +54,27 @@ readings: the v3 report's first reading was wrong for exactly that reason.
 
 ## Deviations
 
-None yet.
+**Pre-measurement work, 2026-10-09. Every row below is excluded; no measurement has run.**
+
+1. **Smoke run, `installed` arm, haiku-4.5, t01:** **0 Skill calls**, hidden pass, and it hit the
+   $0.75 per-run cap ($0.759). The cap is too low for this arm: its listing is about 48k
+   characters in every turn.
+2. **Diagnostics** (in-session probes, no rows):
+   - the `UserPromptSubmit` hook **fires** in this harness (a marker file is written);
+   - the directive and the skill descriptions **reach** the model (it quoted both);
+   - **ordered** to use it, haiku invokes the `Skill` tool, and it executes ("Launching skill:
+     sota").
+
+   The harness *can*; haiku does not choose to, unprompted.
+3. **Pilot (c), `installed` arm, `claude-sonnet-5.5`, t01–t03, cap $1.50:** **3/3 runs invoked a
+   skill**, and in each it was only the router `sota`. Then nothing: no `sota-python`, no rules
+   file read. 3/3 hidden pass; about $0.40 per run by the SDK meter.
+
+**What this changes, decided before any measurement:**
+- **The per-run cap must return to $1.50**, or `installed` rows will be cut off and excluded.
+- **Haiku cannot test the rules**, because it does not invoke them.
+- **The pinned SOTA-skills commit `9c00cc8` predates SOTA-skills #517.** #517 changed router BUILD
+  step 4 to list the files step 2 loaded and to fail on an empty list. That is the very gap pilot
+  (c) shows: the router is invoked, and nothing it routes to is loaded.
+
+The model and pin decision is the operator's and is pending.
