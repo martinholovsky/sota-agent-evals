@@ -72,9 +72,13 @@ consistent with a small effect of #517, and equally with none; n is too small to
 ## Spend
 
 - **SDK estimate for the 40 + 6 jobs:** $13.87.
-- **Account figure:** pending. OpenRouter's usage counter lags by hours (v3's first reading was
-  off by about $11, see the v3 report), so the settled account figure will be added after it
-  settles, with two readings.
+- **Account figure, settled: about $13.22.** Usage read **851.8152** at 21:27 on 2026-10-09 and
+  **851.8180** on 2026-10-10 before v5's gates. The two readings agree within $0.003, so the
+  counter had settled. Against **838.5980**, read the morning of 2026-10-09 (v3's settled
+  reading), the account rose **$13.22**. That covers v4's smoke, pilot, preflight, chunks and
+  re-runs from that morning on. It excludes the 2026-10-08 preflight, which ran before that
+  reading. It would also include any other use of the account in the window, which this
+  figure cannot separate out. The SDK estimate was $13.87.
 
 ## Limits
 
