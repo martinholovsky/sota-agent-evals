@@ -109,10 +109,10 @@ None. Nothing changed after the pre-registration was committed.
 |---|---|---|
 | before the gates, 2026-10-10 21:13 CEST | $865.4539 | (also v5's settled second reading) |
 | 2026-10-10 21:47 CEST | $880.7436 | +$15.29, gates and pilot included; the counter lags |
-| second reading, hours later | **pending** | |
+| 2026-10-10 22:37 CEST | $880.7627 | +$0.02 in 50 min: settled. **v6 cost $15.31** with gates and pilot |
 
 The SDK estimate is $17.52 for the 40 runs, plus $0.23 preflight, $0.04 sandbox-probe and $0.81
-pilot. The account figure is the budget of record, and it is reported once two readings agree.
+pilot ($18.60 in all); the account, the budget of record, settled lower at $15.31.
 
 ## Limits
 
