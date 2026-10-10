@@ -633,3 +633,27 @@ def test_cmd_run_keeps_the_cli_transcript(tmp_path, fake_sota, monkeypatch):
     rows = [json.loads(l) for l in (tmp_path / "out" / "runs.jsonl").read_text().splitlines()]
     assert rows and rows[0]["context"]["transcripts"] == 1 and rows[0]["context"]["rules_in_context"]
     assert list((tmp_path / "out" / "transcripts").glob("*/p/s.jsonl"))
+
+
+# ---- cases-v4: spec vs rule results -------------------------------------------------------
+_V = """test_a (hidden.test_task.Spec.test_a) ... ok
+test_b (hidden.test_task.Spec.test_b) ... ok
+test_x (hidden.test_rules.R.test_x)
+Rejects a stale delivery. ... FAIL
+test_y (hidden.test_rules.R.test_y) ... ok
+test_z (hidden.test_orders.Place.test_z) ... ERROR
+"""
+
+
+def test_split_results_counts_rules_and_spec():
+    from agent_evals.score import split_results
+    assert split_results(_V, 5) == {"rules": {"passed": 1, "total": 2}, "spec_ok": False}
+    ok_spec = _V.replace("... ERROR", "... ok")
+    assert split_results(ok_spec, 5) == {"rules": {"passed": 1, "total": 2}, "spec_ok": True}
+
+
+def test_split_results_withholds_on_a_short_parse_and_skips_v3_suites():
+    from agent_evals.score import split_results
+    assert split_results(_V, 6)["rules"] is None                 # one result unaccounted for
+    v3 = "\n".join(l for l in _V.splitlines() if "test_rules" not in l and "stale" not in l)
+    assert split_results(v3, 3) == {}

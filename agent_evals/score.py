@@ -47,7 +47,7 @@ def hidden_pass(case_dir: Path, workspace: Path, unsafe_local: bool = False, tim
         # or an agent could write trivially-passing tests there and score itself.
         shutil.copytree(workspace, tmp / "w", ignore=shutil.ignore_patterns(".git", HIDDEN))
         shutil.copytree(case_dir / HIDDEN, tmp / "w" / HIDDEN)
-        test = ["python", "-m", "unittest", "discover", "-s", HIDDEN, "-t", "."]
+        test = ["python", "-m", "unittest", "discover", "-v", "-s", HIDDEN, "-t", "."]
         rt = None if force_local else container_runtime()
         if rt:
             cmd = [rt, "run", "--rm", "--network=none", "--memory=1g", "--pids-limit=256",
@@ -69,11 +69,33 @@ def hidden_pass(case_dir: Path, workspace: Path, unsafe_local: bool = False, tim
         # "Ran 0 tests" is OK with exit 0 — an empty discovery is not a pass (rules/11 §2.2)
         n = int(ran.group(1)) if ran else 0
         return {"ok": p.returncode == 0 and n > 0, "tests": n, "rc": p.returncode,
-                "runtime": rt or "local", "tail": tail}
+                "runtime": rt or "local", "tail": tail, **split_results(p.stdout + p.stderr, n)}
     except subprocess.TimeoutExpired:
         return {"ok": False, "why": "hidden tests timed out"}
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+# cases-v4: hidden/test_rules.py holds RULE tests (a library rule requires them; the prompt does not
+# state them), everything else is base regression + SPEC tests. `unittest -v` prints one result per
+# test, optionally after a docstring line; the dotted name says which module it came from.
+_RESULT = re.compile(r"^(test\w+) \(([\w.]+)\)(?:\n[^\n]*?)? \.\.\. (ok|FAIL|ERROR|skipped|expected failure|unexpected success)",
+                     re.M)
+
+
+def split_results(out: str, ran: int) -> dict:
+    """{"rules": {"passed", "total"}, "spec_ok"} — or {} when the suite has no rule tests. If the
+    per-test lines do not account for every test that ran, the split is withheld (rules: None):
+    a parse that silently drops tests would under- or over-state the primary outcome."""
+    res = [(m.group(2), m.group(3)) for m in _RESULT.finditer(out)]
+    rules = [ok for name, ok in res if ".test_rules." in name]
+    if not rules:
+        return {}
+    if len(res) != ran:
+        return {"rules": None, "spec_ok": None, "why": "parsed %d of %d results" % (len(res), ran)}
+    spec = [ok for name, ok in res if ".test_rules." not in name]
+    return {"rules": {"passed": sum(r == "ok" for r in rules), "total": len(rules)},
+            "spec_ok": bool(spec) and all(r == "ok" for r in spec)}
 
 
 def unverified_done(tool_calls: list, result: dict, tree_changed: bool) -> bool | None:
