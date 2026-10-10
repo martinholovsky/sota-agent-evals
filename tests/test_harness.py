@@ -198,7 +198,8 @@ def _args(tmp_path, fake_sota, **kw):
     import argparse
     d = dict(model="m", sota_root=fake_sota, cases=CASES, only=None, arms="bare,library",
              samples=2, max_turns=5, max_budget_usd=1.0, total_budget_usd=100.0, timeout=60,
-             out=str(tmp_path / "out"), unsafe_local_scoring=True, concurrency=3, provider="anthropic")
+             out=str(tmp_path / "out"), unsafe_local_scoring=True, concurrency=3, provider="anthropic",
+             headroom_per_session_usd=3.75)
     d.update(kw)
     return argparse.Namespace(**d)
 
@@ -223,6 +224,44 @@ def test_runner_stops_at_total_budget(tmp_path, fake_sota, monkeypatch):
     cli.cmd_run(_args(tmp_path, fake_sota, total_budget_usd=1.0, concurrency=1))
     rows = (tmp_path / "out" / "runs.jsonl").read_text().splitlines()
     assert len(rows) == 2
+
+
+@pytest.mark.parametrize("total,conc,per,want", [
+    (4.0, 4, 3.75, 15.0),     # v4: concurrency, not the cap, is what binds
+    (20.0, 4, 3.75, 20.0),    # a cap above the holds still binds
+    (4.0, 0, 3.75, 4.0),      # concurrency is floored at 1, so per-session can't vanish
+    (1.0, 1, 3.75, 3.75),
+])
+def test_required_headroom(total, conc, per, want):
+    from agent_evals.cli import required_headroom
+    assert required_headroom(total, conc, per) == want
+
+
+def _openrouter(monkeypatch, cli, left):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    monkeypatch.setattr(cli, "openrouter_usage", lambda key: 0.0)
+    monkeypatch.setattr(cli, "openrouter_remaining", lambda key: left)
+    monkeypatch.setattr(cli, "run_one", _fake_run_one(0.01))
+
+
+def test_runner_refuses_when_inflight_holds_exceed_credit(tmp_path, fake_sota, monkeypatch):
+    """Known-bad, the v4 failure verbatim: $5.12 left clears a $4 cap, but 4 concurrent sessions
+    hold more than that in flight and OpenRouter answers 402. The old guard let this start."""
+    from agent_evals import cli
+    _openrouter(monkeypatch, cli, 5.12)
+    with pytest.raises(SystemExit, match=r"below the \$15\.00 this run needs"):
+        cli.cmd_run(_args(tmp_path, fake_sota, provider="openrouter", total_budget_usd=4.0, concurrency=4))
+    assert not (tmp_path / "out" / "runs.jsonl").exists() or \
+        (tmp_path / "out" / "runs.jsonl").read_text() == ""          # refused BEFORE any job ran
+
+
+def test_runner_starts_with_enough_headroom(tmp_path, fake_sota, monkeypatch):
+    """Known-good twin, so the refusal above cannot pass by refusing everything."""
+    from agent_evals import cli
+    _openrouter(monkeypatch, cli, 15.0)
+    assert cli.cmd_run(_args(tmp_path, fake_sota, provider="openrouter", total_budget_usd=4.0,
+                             concurrency=4, samples=1)) == 0
+    assert (tmp_path / "out" / "runs.jsonl").read_text().strip()
 
 
 # ---- the pre-registered analysis, on synthetic rows with a known answer -----------------

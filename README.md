@@ -64,6 +64,12 @@ fails otherwise. **Run preflight before every measurement.**
   cap. With no container runtime it refuses unless `--unsafe-local-scoring` is passed.
 - Budgets on every run: `--max-turns`, `--max-budget-usd` (per run), `--timeout`, and
   `--total-budget-usd` for the whole invocation.
+- On OpenRouter, a run refuses to start unless the account holds the larger of
+  `--total-budget-usd` and `--concurrency` × `--headroom-per-session-usd` (default $3.75).
+  OpenRouter holds each running request's estimated cost and answers `402` while the balance is
+  still positive, so a balance above the cap is not enough: v4 had ~$5 against a $4 cap at
+  concurrency 4 and 6 of 10 jobs failed that way. The default is the threshold v4's re-run
+  succeeded at, not a measured reservation.
 
 ## Usage
 

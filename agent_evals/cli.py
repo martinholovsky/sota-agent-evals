@@ -58,6 +58,16 @@ def openrouter_remaining(key: str) -> float | None:
         return None
 
 
+def required_headroom(total_budget_usd: float, concurrency: int, per_session_usd: float) -> float:
+    """Credit the account must hold before a run starts: the larger of the run's own cap and what
+    the concurrent sessions can hold IN FLIGHT. OpenRouter holds each running request's estimated
+    cost (input + the completion `max_tokens` allows) and refuses a request that does not fit with
+    `402` "even though your balance is positive" (docs/api-reference/limits, read 2026-10-09). So a
+    balance above the cap is not enough: v4 had ~$5 against a $4 cap at concurrency 4 and 6 of 10
+    jobs got that 402, while the auto top-up (it watches the balance, not the holds) never fired."""
+    return max(total_budget_usd, max(1, concurrency) * per_session_usd)
+
+
 def openrouter_usage(key: str) -> float | None:
     """Cumulative USD spent on this OpenRouter key (GET /api/v1/key -> data.usage). The SDK's
     total_cost_usd is estimated from Anthropic's price list, so it is not the budget of record
@@ -136,10 +146,14 @@ def cmd_run(a, preflight: bool = False) -> int:
         raise SystemExit("cannot read OpenRouter usage — refusing to run without the budget of record")
     if a.provider == "openrouter" and not preflight:
         left = openrouter_remaining(key)
-        if left is None or left < a.total_budget_usd:
-            raise SystemExit("OpenRouter account credit left: %s, below --total-budget-usd %.2f — "
-                             "top up or lower the cap; a run that starves mid-way is unanalysable"
-                             % ("unknown" if left is None else "$%.2f" % left, a.total_budget_usd))
+        need = required_headroom(a.total_budget_usd, a.concurrency, a.headroom_per_session_usd)
+        if left is None or left < need:
+            raise SystemExit("OpenRouter account credit left: %s, below the $%.2f this run needs "
+                             "(max of --total-budget-usd %.2f and --concurrency %d x "
+                             "--headroom-per-session-usd %.2f for in-flight holds) — top up, lower the "
+                             "cap or the concurrency; a run that starves mid-way is unanalysable"
+                             % ("unknown" if left is None else "$%.2f" % left, need, a.total_budget_usd,
+                                a.concurrency, a.headroom_per_session_usd))
 
     def spent_now():
         if base_usage is None:
@@ -277,6 +291,11 @@ def main(argv=None) -> int:
     p.add_argument("--total-budget-usd", type=float, default=10.00, help="whole invocation")
     p.add_argument("--timeout", type=int, default=900, help="per run, seconds")
     p.add_argument("--concurrency", type=int, default=4, help="runs in flight at once")
+    # 3.75 = v4's re-run rule ($15 at concurrency 4), set after the failure: $1.25/session failed
+    # (6 of 10 jobs, 402) and $3.75/session succeeded (6 of 6). One observation each side -- a
+    # threshold that worked, NOT a measured reservation. Lower it only with a run that shows it.
+    p.add_argument("--headroom-per-session-usd", type=float, default=3.75,
+                   help="OpenRouter credit required per concurrent session for in-flight holds")
     p.add_argument("--out", default="results/%s" % time.strftime("%Y-%m-%d"))
     p.add_argument("--unsafe-local-scoring", action="store_true",
                    help="run hidden tests on this host when no container runtime exists")
