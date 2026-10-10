@@ -1,0 +1,101 @@
+{
+  "arms": {
+    "control": {
+      "arm": "installed",
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "rules_in_context": {
+        "k": 2,
+        "n": 20,
+        "rate": 0.1
+      },
+      "rules_read": {
+        "k": 1,
+        "n": 20,
+        "rate": 0.05
+      },
+      "rules_named": {
+        "k": 1,
+        "n": 20,
+        "rate": 0.05
+      },
+      "further_skill": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "past_router": {
+        "k": 1,
+        "n": 20,
+        "rate": 0.05
+      },
+      "mean_rules_lines_seen": 21.2,
+      "hidden_pass": 1.0,
+      "mean_cost_usd": 0.4276,
+      "mean_turns": 21.75
+    },
+    "treatment": {
+      "arm": "installed+depth",
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "hook_hint_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 4,
+        "n": 20,
+        "rate": 0.2
+      },
+      "rules_read": {
+        "k": 2,
+        "n": 20,
+        "rate": 0.1
+      },
+      "rules_named": {
+        "k": 4,
+        "n": 20,
+        "rate": 0.2
+      },
+      "further_skill": {
+        "k": 18,
+        "n": 20,
+        "rate": 0.9
+      },
+      "past_router": {
+        "k": 18,
+        "n": 20,
+        "rate": 0.9
+      },
+      "mean_rules_lines_seen": 8.2,
+      "hidden_pass": 1.0,
+      "mean_cost_usd": 0.4484,
+      "mean_turns": 25.2
+    }
+  },
+  "invalid": [],
+  "primary": {
+    "diff": 0.1,
+    "fisher_one_sided_p": 0.3307
+  },
+  "verdict": "INCONCLUSIVE",
+  "compromised": false
+}

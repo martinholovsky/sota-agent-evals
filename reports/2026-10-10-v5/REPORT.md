@@ -82,10 +82,10 @@ change outcomes. This report does not claim it would.
 |---|---|---|
 | before the gates (2026-10-10) | $851.8180 | |
 | 2026-10-10 12:10 CEST | $865.3783 | +$13.56; the counter lags (v3, v4) |
-| second reading, hours later | **pending** | |
+| 2026-10-10 21:13 CEST | $865.4539 | +$0.08 over nine hours: settled. **v5 cost $13.64** |
 
-The SDK estimate is $16.13 for the 40 runs plus $0.27 for the gates. The account figure is
-the budget of record, and it is reported once two readings agree.
+The SDK estimate was $16.13 for the 40 runs plus $0.27 for the gates; the account, the budget of
+record, settled lower at $13.64.
 
 ## Limits
 
