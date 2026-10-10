@@ -26,8 +26,13 @@ def fake_sota(tmp_path_factory):
     for n in ("sota", "sota-shell-scripting"):
         (r / "skills" / n).mkdir(parents=True)
         (r / "skills" / n / "SKILL.md").write_text("---\nname: %s\ndescription: x\n---\n" % n)
+    rules = r / "skills" / "sota-shell-scripting" / "rules"
+    rules.mkdir()                               # enough long lines to clear the fingerprint floor
+    (rules / "01-x.md").write_text("".join("rule line %04d: quote every expansion, check every status\n" % i
+                                           for i in range(1200)) + "## Audit checklist\n")
     (r / "scripts").mkdir()
     (r / "scripts" / "verified-done-hook.py").write_text("")
+    (r / "scripts" / "skill-depth-hook.py").write_text("")
     (r / "scripts" / "install.sh").write_text(   # the two shapes routing_layer() reads
         "readonly HOOK_CMD=\"echo 'invoke the sota skill FIRST'\"\n"
         "readonly RT_END=\"<!-- end -->\"\n"
@@ -497,3 +502,134 @@ def test_row_records_depth_and_router(tmp_path, fake_sota, monkeypatch):
     cli.cmd_run(_args(tmp_path, fake_sota, samples=1))
     rows = [json.loads(l) for l in (tmp_path / "out" / "runs.jsonl").read_text().splitlines()]
     assert rows and all("depth" in r and len(r["router_sha"]) == 16 for r in rows)
+
+
+# ---- v6: rules text in context, from the CLI transcript ------------------------------------
+_RL = "Every substitution whose producer can find nothing aborts the script under set -e."
+_SL = "This line is in the index too, so seeing it proves nothing about the rules file."
+
+
+def _fp_root(tmp_path):
+    sk = tmp_path / "lib" / "skills"
+    (sk / "sota-shell-scripting" / "rules").mkdir(parents=True)
+    (sk / "sota" / "rules").mkdir(parents=True)
+    (sk / "sota-shell-scripting" / "SKILL.md").write_text("# idx\n" + _SL + "\n")
+    (sk / "sota" / "SKILL.md").write_text("# router\n")
+    (sk / "sota-shell-scripting" / "rules" / "02-x.md").write_text(
+        "# t\n" + _RL + "\n" + _SL + "\nshort line\n## Audit checklist\n")
+    (sk / "sota" / "rules" / "02-build-workflow.md").write_text(
+        "The router's own methodology line, long enough to be a fingerprint candidate.\n")
+    return tmp_path / "lib"
+
+
+def _transcript(tdir, results=(), assistant_text="", extra=""):
+    tdir.mkdir(parents=True, exist_ok=True)
+    recs = [{"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": "x",
+                                                      "content": r}]}} for r in results]
+    recs.append({"type": "assistant", "message": {"content": [{"type": "text", "text": assistant_text}]}})
+    (tdir / "s.jsonl").write_text("\n".join(json.dumps(r) for r in recs) + "\n" + extra)
+
+
+def test_fingerprints_exclude_index_lines_short_lines_and_the_router(tmp_path):
+    from agent_evals.score import rules_fingerprints
+    fp = rules_fingerprints(_fp_root(tmp_path))
+    assert _RL in fp and _SL not in fp and "short line" not in fp
+    assert not any("router's own" in l for l in fp)
+
+
+@pytest.mark.parametrize("results,assistant,want", [
+    (["     12\t" + _RL], "", True),                      # Read tool: cat -n prefix
+    (["/c/skills/sota-shell-scripting/rules/02-x.md:2:" + _RL], "", True),   # grep -n with path
+    (["2:" + _RL], "", True),                              # grep -n, one file
+    ([_RL], "", True),                                     # sed -n / cat: raw
+    ([[{"type": "text", "text": "hdr\n" + _RL}]], "", True),   # list-shaped tool_result
+    (["     3\t" + _SL], "", False),                       # a line the SKILL.md also holds
+    ([], _RL, False),                                      # the model's own text is not a read
+    (["ls rules/\n02-x.md"], "", False),                   # a listing is not the text
+])
+def test_transcript_depth_labelled(tmp_path, results, assistant, want):
+    from agent_evals.score import rules_fingerprints, transcript_depth
+    fp = rules_fingerprints(_fp_root(tmp_path))
+    _transcript(tmp_path / "t", results, assistant)
+    got = transcript_depth(tmp_path / "t", fp)
+    assert got["transcripts"] == 1 and got["rules_in_context"] is want
+
+
+def test_transcript_depth_reads_spilled_results_and_counts_hook_hints(tmp_path):
+    from agent_evals.score import rules_fingerprints, transcript_depth
+    fp = rules_fingerprints(_fp_root(tmp_path))
+    _transcript(tmp_path / "t", ["<persisted output: see file>"],
+                extra=json.dumps({"attachment": "SOTA: `sota-x` loaded its index (SKILL.md) only — x"}) + "\n")
+    spill = tmp_path / "t" / "sess" / "tool-results"
+    spill.mkdir(parents=True)
+    (spill / "r1.txt").write_text("     1\t" + _RL + "\n")
+    got = transcript_depth(tmp_path / "t", fp)
+    assert got["rules_in_context"] and got["hint_skill"] == 1 and got["hint_router"] == 0
+    assert transcript_depth(tmp_path / "missing", fp)["transcripts"] == 0
+
+
+def test_depth_hook_arm_registers_the_hook_and_fails_closed(fake_sota, tmp_path):
+    s = A.settings_for(A.ARMS["installed+depth"], fake_sota)
+    post = s["hooks"]["PostToolUse"]
+    assert post == [{"matcher": "Skill", "hooks": [{"type": "command", "command":
+                    "python3 %s" % json.dumps(str(fake_sota / "scripts" / "skill-depth-hook.py"))}]}]
+    assert "UserPromptSubmit" in s["hooks"]                       # still the full routing layer
+    assert "PostToolUse" not in A.settings_for(A.ARMS["installed"], fake_sota).get("hooks", {})
+    bare = tmp_path / "nohook"
+    shutil.copytree(fake_sota, bare)
+    (bare / "scripts" / "skill-depth-hook.py").unlink()
+    with pytest.raises(SystemExit):
+        A.settings_for(A.ARMS["installed+depth"], bare)
+
+
+def _v6_rows(c_k, t_k, n=20, t_hint=True, c_hint=False, transcripts=1, sha="aaaa"):
+    rows = []
+    for arm, k, hint in (("installed", c_k, c_hint), ("installed+depth", t_k, t_hint)):
+        for i in range(n):
+            rows.append({"case": "t%02d" % i, "arm": arm, "sample": 0, "error": None,
+                         "router_sha": sha, "hidden": {"ok": True},
+                         "contamination": {"treatment_present": True, "skill_calls": 1},
+                         "depth": {"rules_read": 0, "rules_named": 0, "further_skill": False,
+                                   "past_router": False},
+                         "context": {"transcripts": transcripts, "rules_in_context": i < k,
+                                     "rules_lines_seen": 3 if i < k else 0,
+                                     "hint_router": int(hint), "hint_skill": 0},
+                         "result": {"total_cost_usd": 0.3, "num_turns": 10}})
+    return rows
+
+
+@pytest.mark.parametrize("c_k,t_k,want", [
+    (0, 8, "SUPPORTED"), (0, 1, "NULL"), (0, 3, "INCONCLUSIVE"), (5, 4, "NULL")])
+def test_v6_verdicts(c_k, t_k, want):
+    from agent_evals.analyze import analyze_v6
+    assert analyze_v6(_v6_rows(c_k, t_k))["verdict"] == want
+
+
+def test_v6_validity_and_manipulation():
+    from agent_evals.analyze import analyze_v6
+    assert analyze_v6(_v6_rows(0, 8, c_hint=True))["verdict"] == "INVALID"        # arms not separated
+    assert analyze_v6(_v6_rows(0, 8, transcripts=0))["verdict"] == "INVALID"      # nothing to score
+    mixed = _v6_rows(0, 8)
+    mixed[0]["router_sha"] = "bbbb"
+    assert analyze_v6(mixed)["verdict"] == "INVALID"
+    assert analyze_v6(_v6_rows(0, 8, t_hint=False))["verdict"] == "MANIPULATION FAILED"
+
+
+def test_cmd_run_keeps_the_cli_transcript(tmp_path, fake_sota, monkeypatch):
+    from agent_evals import cli
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    inner = _fake_run_one(0.01)
+
+    async def with_transcript(arm, case, sample, cfg, key):
+        ws, cd, tr = await inner(arm, case, sample, cfg, key)
+        d = cd / "projects" / "p"
+        d.mkdir(parents=True)
+        line = "rule line 0007: quote every expansion, check every status"
+        (d / "s.jsonl").write_text(json.dumps({"message": {"content": [
+            {"type": "tool_result", "content": "     8\t" + line}]}}) + "\n")
+        return ws, cd, tr
+    monkeypatch.setattr(cli, "run_one", with_transcript)
+    cli.cmd_run(_args(tmp_path, fake_sota, samples=1, only=load_cases(CASES)[0].id, arms="installed"))
+    rows = [json.loads(l) for l in (tmp_path / "out" / "runs.jsonl").read_text().splitlines()]
+    assert rows and rows[0]["context"]["transcripts"] == 1 and rows[0]["context"]["rules_in_context"]
+    assert list((tmp_path / "out" / "transcripts").glob("*/p/s.jsonl"))

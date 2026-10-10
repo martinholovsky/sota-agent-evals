@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -155,3 +156,73 @@ def depth(tool_calls: list) -> dict:
     return {"skills": skills, "further_skill": bool(further), "rules_read": rules_read,
             "rules_named": rules_named,
             "past_router": bool(further or rules_read or rules_named or skill_md)}
+
+
+# Rules text in context (v6 primary). v5 counted a Read of a rules file, but a model that reads with
+# `sed -n`/`cat`/`grep` through Bash would score 0 on that -- this harness's own maintainer read
+# every rules file that way (SOTA-skills session, 2026-10-10). So v6 asks the content question
+# instead: did any TOOL RESULT carry a line of rules-file text? Fingerprints are the long lines of
+# every `sota-*/rules/*.md`, minus any line that also appears in a SKILL.md (the skill load already
+# puts those in context) -- so the tool used, a partial read, and line-number prefixes do not matter.
+# The source is Claude Code's own session transcript, kept per run, never the runner's truncated copy.
+FP_MIN = 50
+HOOK_MARKERS = {"hint_router": "router is a map and applies no rule by itself",
+                "hint_skill": "loaded its index (SKILL.md) only"}
+_PREFIXES = (re.compile(r"^\s*\d+\t"), re.compile(r"^(?:[^\s:]+:)?\d+[:-]"))
+
+
+def rules_fingerprints(sota_root: Path) -> set:
+    skills = Path(sota_root) / "skills"
+    idx = {l.strip() for f in skills.glob("*/SKILL.md")
+           for l in f.read_text(encoding="utf-8").splitlines()}
+    fp = {l.strip() for f in skills.glob("sota-*/rules/*.md")
+          for l in f.read_text(encoding="utf-8").splitlines() if len(l.strip()) >= FP_MIN}
+    return fp - idx
+
+
+def _lines_hit(text: str, fp: set) -> int:
+    n = 0
+    for line in text.splitlines():
+        cands = {line.strip()} | {p.sub("", line, count=1).strip() for p in _PREFIXES}
+        n += bool(cands & fp)
+    return n
+
+
+def _tool_results(rec: dict):
+    msg = rec.get("message") or {}
+    content = msg.get("content")
+    if not isinstance(content, list):
+        return
+    for b in content:
+        if isinstance(b, dict) and b.get("type") == "tool_result":
+            c = b.get("content")
+            if isinstance(c, str):
+                yield c
+            elif isinstance(c, list):
+                for x in c:
+                    if isinstance(x, dict) and isinstance(x.get("text"), str):
+                        yield x["text"]
+
+
+def transcript_depth(tdir: Path, fp: set) -> dict:
+    """Score a run from the CLI's own transcript tree (projects/**): rules lines seen in tool
+    results (plus any oversized result the CLI spilled to a tool-results file), and how often
+    the skill-depth hook's text reached the model. `transcripts` = 0 means nothing to score."""
+    files = sorted(Path(tdir).rglob("*.jsonl")) if Path(tdir).is_dir() else []
+    seen, hints = 0, {k: 0 for k in HOOK_MARKERS}
+    for f in files:
+        raw = f.read_text(encoding="utf-8", errors="replace")
+        for k, m in HOOK_MARKERS.items():
+            hints[k] += raw.count(m)
+        for line in raw.splitlines():
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            for text in _tool_results(rec):
+                seen += _lines_hit(text, fp)
+    spilled = [p for p in Path(tdir).rglob("*") if p.is_file() and "tool-results" in p.parts] \
+        if Path(tdir).is_dir() else []
+    for p in spilled:
+        seen += _lines_hit(p.read_text(encoding="utf-8", errors="replace"), fp)
+    return {"transcripts": len(files), "rules_lines_seen": seen, "rules_in_context": seen > 0, **hints}

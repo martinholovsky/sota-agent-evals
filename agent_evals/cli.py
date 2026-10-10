@@ -22,7 +22,8 @@ from pathlib import Path
 
 from .arms import ARMS, cleanup, parse_arms, sota_skill_names
 from .runner import RunConfig, options_for, run_one
-from .score import contamination, depth, hidden_pass, shipped_broken, tree_changed, unverified_done
+from .score import (contamination, depth, hidden_pass, rules_fingerprints, shipped_broken,
+                    transcript_depth, tree_changed, unverified_done)
 from .workspace import load_cases
 
 HERE = Path(__file__).resolve().parent.parent
@@ -104,7 +105,7 @@ def router_sha(sota_root: Path) -> str:
     return hashlib.sha256((sota_root / "skills" / "sota" / "SKILL.md").read_bytes()).hexdigest()[:16]
 
 
-def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
+def _row(arm, case, sample, ws, tr, a, sota_skills, tdir=None, fp=None) -> dict:
     changed = tree_changed(ws)
     hidden = hidden_pass(case.dir, ws, unsafe_local=a.unsafe_local_scoring)
     return {
@@ -121,6 +122,8 @@ def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
         "hook_ledger": (ws / ".git" / "sota-verified-done").is_dir(),
         "depth": depth(tr.tool_calls),
         "router_sha": router_sha(a.sota_root),
+        # v6 primary: rules text in any tool result, read from the CLI's own transcript (kept)
+        "context": transcript_depth(tdir, fp) if tdir is not None and fp else None,
     }
 
 
@@ -171,6 +174,9 @@ def cmd_run(a, preflight: bool = False) -> int:
     sem = asyncio.Semaphore(max(1, a.concurrency))
     lock = asyncio.Lock()
     (out / "traces").mkdir(exist_ok=True)
+    fp = rules_fingerprints(a.sota_root)
+    if len(fp) < 1000:   # fails closed: an empty fingerprint set scores every run 'no rules seen'
+        raise SystemExit("only %d rules-text fingerprints from %s — wrong --sota-root?" % (len(fp), a.sota_root))
 
     async def one(s, case, arm, f):
         async with sem:
@@ -178,7 +184,12 @@ def cmd_run(a, preflight: bool = False) -> int:
                 state["stopped"] = True
                 return
             ws, cd, tr = await run_one(arm, case, s, cfg, key)
-            row = await asyncio.to_thread(_row, arm, case, s, ws, tr, a, sota_skills)
+            # the CLI's own session transcript (tool results in full, hook context, skill loads)
+            # lives under the run's config dir, which cleanup deletes: keep it first
+            tdir = out / "transcripts" / ("%s__%s__%d" % (case.id, arm.name.replace("+", "_"), s))
+            if (cd / "projects").is_dir():
+                await asyncio.to_thread(shutil.copytree, cd / "projects", tdir, dirs_exist_ok=True)
+            row = await asyncio.to_thread(_row, arm, case, s, ws, tr, a, sota_skills, tdir, fp)
             async with lock:
                 (out / "traces" / ("%s__%s__%d.json" % (case.id, arm.name.replace("+", "_"), s))).write_text(
                     json.dumps(tr.__dict__, default=str, indent=1))

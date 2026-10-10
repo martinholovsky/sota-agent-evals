@@ -192,8 +192,83 @@ def analyze_v5(control: list, treatment: list) -> dict:
     return out
 
 
+V6_ARMS = ("installed", "installed+depth")
+
+
+def ctx(r: dict) -> dict:
+    return r.get("context") or {}
+
+
+def analyze_v6(rows: list) -> dict:
+    """v6: one runs file, both arms interleaved against ONE checkout. Primary = share of valid runs
+    whose tool results carried rules-file text (`context.rules_in_context`, from the CLI's own
+    transcript). Validity: one router across the file; every valid row has a transcript; the
+    treatment's hook text reached the model; both arms invoked a sota skill."""
+    out = {"arms": {}, "invalid": []}
+    shas = {r.get("router_sha") for r in rows}
+    if len(shas) != 1 or None in shas:
+        out["invalid"].append("file mixes routers or lacks router_sha: %s" % sorted(map(str, shas)))
+    stray = sorted({r["arm"] for r in rows} - set(V6_ARMS))
+    if stray:
+        out["invalid"].append("unexpected arms %s" % stray)
+    for label, arm in (("control", V6_ARMS[0]), ("treatment", V6_ARMS[1])):
+        mine = [r for r in rows if r["arm"] == arm]
+        excl = defaultdict(int)
+        for r in mine:
+            why = excluded(r)
+            if why:
+                excl[why] += 1
+        valid = [r for r in mine if not excluded(r)]
+        if any(not (r.get("context") or {}).get("transcripts") for r in valid):
+            out["invalid"].append("%s has valid rows with no CLI transcript to score" % label)
+        costs = [(r.get("result") or {}).get("total_cost_usd") or 0.0 for r in valid]
+        turns = [(r.get("result") or {}).get("num_turns") or 0 for r in valid]
+        hp = [value(r, "hidden_pass") for r in valid if value(r, "hidden_pass") is not None]
+        out["arms"][label] = {
+            "arm": arm, "rows": len(mine), "excluded": dict(excl),
+            "excluded_share": round(sum(excl.values()) / len(mine), 3) if mine else None,
+            "skill_call_rate": _rate(valid, lambda r: ((r.get("contamination") or {}).get("skill_calls") or 0) > 0),
+            "hook_hint_rate": _rate(valid, lambda r: (ctx(r).get("hint_router", 0) + ctx(r).get("hint_skill", 0)) > 0),
+            "rules_in_context": _rate(valid, lambda r: bool(ctx(r).get("rules_in_context"))),
+            "rules_read": _rate(valid, lambda r: (r.get("depth") or {}).get("rules_read", 0) > 0),
+            "rules_named": _rate(valid, lambda r: (r.get("depth") or {}).get("rules_named", 0) > 0),
+            "further_skill": _rate(valid, lambda r: bool((r.get("depth") or {}).get("further_skill"))),
+            "past_router": _rate(valid, lambda r: bool((r.get("depth") or {}).get("past_router"))),
+            "mean_rules_lines_seen": round(sum(ctx(r).get("rules_lines_seen", 0) for r in valid) / len(valid), 1) if valid else None,
+            "hidden_pass": round(sum(hp) / len(hp), 3) if hp else None,
+            "mean_cost_usd": round(sum(costs) / len(costs), 4) if costs else None,
+            "mean_turns": round(sum(turns) / len(turns), 2) if turns else None,
+        }
+    c, t = out["arms"]["control"], out["arms"]["treatment"]
+    for label, a in (("control", c), ("treatment", t)):
+        if not a["rules_in_context"]["n"]:
+            out["invalid"].append("%s has no valid rows" % label)
+    if (c["hook_hint_rate"]["k"] or 0) > 0:
+        out["invalid"].append("the control arm received the hook's text: the arms are not separated")
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    if any((a["skill_call_rate"]["rate"] or 0) < MANIPULATION_MIN for a in (c, t)) \
+            or (t["hook_hint_rate"]["rate"] or 0) < MANIPULATION_MIN:
+        out["verdict"] = "MANIPULATION FAILED"
+        return out
+    diff = t["rules_in_context"]["rate"] - c["rules_in_context"]["rate"]
+    p = fisher_one_sided(c["rules_in_context"]["k"], c["rules_in_context"]["n"],
+                         t["rules_in_context"]["k"], t["rules_in_context"]["n"])
+    out["primary"] = {"diff": round(diff, 3), "fisher_one_sided_p": round(p, 4)}
+    out["verdict"] = ("SUPPORTED" if p < V5_ALPHA and diff >= V5_MIN_DIFF
+                      else "NULL" if diff <= V5_NULL_MAX else "INCONCLUSIVE")
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in (c, t))
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--v6" in args:      # analyze --v6 <runs.jsonl>
+        path = [a for a in args if a != "--v6"][0]
+        rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v6(rows), indent=2, default=str))
+        return
     if "--v5" in args:      # analyze --v5 <control runs.jsonl> <treatment runs.jsonl>
         c_path, t_path = [a for a in args if a != "--v5"]
         load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]

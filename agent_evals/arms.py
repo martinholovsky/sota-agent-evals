@@ -39,6 +39,7 @@ class Arm:
     hook: bool             # scripts/verified-done-hook.py registered on its four events
     routing: bool = False  # the installer's routing layer: UserPromptSubmit hook, CLAUDE.md
                            # directive and listing-budget fraction, read from --sota-root's install.sh
+    depth_hook: bool = False  # scripts/skill-depth-hook.py as a PostToolUse hook on Skill (v6)
 
 
 ARMS = {
@@ -49,6 +50,9 @@ ARMS = {
     # v4 (2026-10-08): library + the routing layer a real `install.sh` install has. Every library
     # arm before v4 invoked ZERO skills (0 of 166 runs): it had skills and no routing layer.
     "installed": Arm("installed", library=True, hook=False, routing=True),
+    # v6 (2026-10-10): `installed` plus SOTA-skills ROADMAP 73 option (c), the opt-in hook that
+    # names the rules files after a skill loads. Read from --sota-root, never copied here.
+    "installed+depth": Arm("installed+depth", library=True, hook=False, routing=True, depth_hook=True),
 }
 
 
@@ -97,6 +101,12 @@ def settings_for(arm: Arm, sota_root: Path) -> dict:
                       **({"matcher": m} if m else {}))]
             for ev, m in HOOK_EVENTS.items()
         }
+    if arm.depth_hook:   # fails closed: an arm without its hook would measure `installed` twice
+        script = sota_root / "scripts" / "skill-depth-hook.py"
+        if not script.is_file():
+            raise SystemExit("installed+depth arm: %s has no scripts/skill-depth-hook.py — wrong --sota-root" % sota_root)
+        s.setdefault("hooks", {}).setdefault("PostToolUse", []).append(
+            {"matcher": "Skill", "hooks": [{"type": "command", "command": "python3 %s" % json.dumps(str(script))}]})
     if arm.routing:
         hook_cmd, _block, frac = routing_layer(sota_root)
         s.setdefault("hooks", {})["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": hook_cmd}]}]
