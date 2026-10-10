@@ -1,0 +1,8 @@
+[
+ {"test": "test_role_in_request_does_not_change_role", "file": "skills/sota-code-security/rules/03-authorization.md",
+  "quote": "Don't trust client-supplied role/privilege fields — role comes from the server-side session/token claims validated against the DB, never from a request body (`{\"role\": \"admin\"}` mass assignment, see rules/07)"},
+ {"test": "test_role_in_request_does_not_change_role", "file": "skills/sota-code-security/rules/07-data-exposure.md",
+  "quote": "Binding request bodies directly to ORM/domain models lets clients set fields you never exposed: `{\"role\":\"admin\"}`, `{\"email_verified\":true}`,"},
+ {"test": "test_credential_fields_in_request_are_not_written", "file": "skills/sota-code-security/rules/07-data-exposure.md",
+  "quote": "Fix structurally: **explicit per-endpoint DTOs/schemas** (input models with only the writable fields), then map allowed fields to the entity. Allowlist, never blocklist:"}
+]

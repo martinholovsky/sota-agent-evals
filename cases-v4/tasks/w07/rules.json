@@ -1,0 +1,6 @@
+[
+ {"test": "test_formula_trigger_names_are_neutralised", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "**CSV/formula injection (CWE-1236)**: cells starting `= + - @`, tab or NUL execute in spreadsheet apps on export; prefix with `'` when generating CSV/XLSX from user data"},
+ {"test": "test_tab_and_nul_prefixed_names_are_neutralised", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "**CSV/formula injection (CWE-1236)**: cells starting `= + - @`, tab or NUL execute in spreadsheet apps on export; prefix with `'` when generating CSV/XLSX from user data"}
+]

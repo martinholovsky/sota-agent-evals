@@ -1,0 +1,8 @@
+[
+ {"test": "test_absolute_url_next_stays_on_site", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "**Open redirect (CWE-601)**: `?next=` targets must be relative-path-only (reject `//evil.com`, `https:`, `\\\\`, scheme-relative) or exact-match against an allowlist."},
+ {"test": "test_scheme_relative_next_stays_on_site", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "**Open redirect (CWE-601)**: `?next=` targets must be relative-path-only (reject `//evil.com`, `https:`, `\\\\`, scheme-relative) or exact-match against an allowlist."},
+ {"test": "test_backslash_next_stays_on_site", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "**Open redirect (CWE-601)**: `?next=` targets must be relative-path-only (reject `//evil.com`, `https:`, `\\\\`, scheme-relative) or exact-match against an allowlist."}
+]

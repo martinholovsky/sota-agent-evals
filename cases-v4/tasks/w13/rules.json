@@ -1,0 +1,10 @@
+[
+ {"test": "test_newline_in_username_does_not_forge_an_entry", "file": "skills/sota-code-security/rules/07-data-exposure.md",
+  "quote": "**Log injection (CWE-117)**: strip/escape CR/LF and control chars from user-controlled values before logging (forged entries, log-parser exploits"},
+ {"test": "test_newline_in_username_does_not_forge_an_entry", "file": "skills/sota-api-design/rules/07-security-operations.md",
+  "quote": "Logs are an injection target: encode/escape user-controlled strings (CRLF/log forging)"},
+ {"test": "test_carriage_return_in_username_does_not_forge_an_entry", "file": "skills/sota-code-security/rules/07-data-exposure.md",
+  "quote": "**Log injection (CWE-117)**: strip/escape CR/LF and control chars from user-controlled values before logging (forged entries, log-parser exploits"},
+ {"test": "test_crlf_in_username_does_not_forge_an_entry", "file": "skills/sota-api-design/rules/07-security-operations.md",
+  "quote": "Logs are an injection target: encode/escape user-controlled strings (CRLF/log forging)"}
+]

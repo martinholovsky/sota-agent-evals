@@ -1,0 +1,10 @@
+[
+ {"test": "test_crlf_in_display_name_never_reaches_subject", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Same bug in email: user input in `Subject`/`To` enables SMTP header injection (`%0aBcc: victims`)"},
+ {"test": "test_crlf_in_display_name_never_reaches_subject", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Reject CR, LF, NUL and the protocol's delimiters, or use a client that frames each command."},
+ {"test": "test_bare_lf_in_display_name_never_reaches_subject", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Same bug in email: user input in `Subject`/`To` enables SMTP header injection (`%0aBcc: victims`)"},
+ {"test": "test_bare_lf_in_display_name_never_reaches_subject", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Reject CR, LF, NUL and the protocol's delimiters, or use a client that frames each command."}
+]

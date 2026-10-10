@@ -1,0 +1,14 @@
+[
+ {"test": "test_type_is_decided_by_content_not_extension", "file": "skills/sota-code-security/rules/21-file-uploads.md",
+  "quote": "Validate by **content**, not trust: check magic bytes/parse the file with a real decoder; the client `Content-Type` and filename extension are attacker-controlled."},
+ {"test": "test_type_is_decided_by_content_not_extension", "file": "skills/sota-code-security/rules/09-untrusted-data-ingestion.md",
+  "quote": "**Determine type from bytes, not declaration.** Sniff the real MIME from magic bytes and reject when it disagrees with the declared/extension type."},
+ {"test": "test_html_named_jpg_is_refused", "file": "skills/sota-code-security/rules/21-file-uploads.md",
+  "quote": "Validate by **content**, not trust: check magic bytes/parse the file with a real decoder; the client `Content-Type` and filename extension are attacker-controlled."},
+ {"test": "test_oversized_upload_is_refused", "file": "skills/sota-code-security/rules/21-file-uploads.md",
+  "quote": "Limits: max size (enforced streaming, before buffering whole body), max files/request, rate limits"},
+ {"test": "test_stored_name_is_not_the_client_filename", "file": "skills/sota-code-security/rules/21-file-uploads.md",
+  "quote": "**generate the stored filename yourself** (UUID), keep the original only as metadata (also kills path traversal, rules/01 §4)."},
+ {"test": "test_stored_name_is_not_the_client_filename", "file": "skills/sota-code-security/rules/09-untrusted-data-ingestion.md",
+  "quote": "store under a server-generated id (never the user filename, rules/01 §4)"}
+]

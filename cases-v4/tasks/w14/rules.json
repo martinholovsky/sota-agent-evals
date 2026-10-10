@@ -1,0 +1,8 @@
+[
+ {"test": "test_timeout_after_commit_charges_once", "file": "skills/sota-api-design/rules/01-rest-http-design.md",
+  "quote": "POST that creates a payment/order/email must be safely retryable — networks fail after the server commits."},
+ {"test": "test_timeout_after_commit_charges_once", "file": "skills/sota-architecture/rules/04-resilience-and-failure-design.md",
+  "quote": "**Rule:** Retry only idempotent operations (rules/03 §2), only on retryable errors"},
+ {"test": "test_two_timeouts_after_commit_charge_once", "file": "skills/sota-api-design/rules/01-rest-http-design.md",
+  "quote": "POST that creates a payment/order/email must be safely retryable — networks fail after the server commits."}
+]

@@ -262,8 +262,37 @@ def analyze_v6(rows: list) -> dict:
     return out
 
 
+def rules_summary(rows: list) -> dict:
+    """cases-v4, per arm: spec pass rate, rule tests passed / total (pooled), mean per-run rule share,
+    and per case. Rows whose rule split was withheld or whose scoring failed are counted, not used."""
+    out = {}
+    for arm in sorted({r["arm"] for r in rows}):
+        mine = [r for r in rows if r["arm"] == arm]
+        scored = [r for r in mine if not excluded(r) and (r.get("hidden") or {}).get("rules")]
+        unscored = len(mine) - len(scored)
+        k = sum(r["hidden"]["rules"]["passed"] for r in scored)
+        n = sum(r["hidden"]["rules"]["total"] for r in scored)
+        shares = [r["hidden"]["rules"]["passed"] / r["hidden"]["rules"]["total"] for r in scored]
+        out[arm] = {
+            "rows": len(mine), "unscored_or_excluded": unscored,
+            "spec_ok": _rate(scored, lambda r: r["hidden"].get("spec_ok") is True),
+            "rule_tests_passed": {"k": k, "n": n, "rate": round(k / n, 3) if n else None},
+            "mean_run_rule_share": round(sum(shares) / len(shares), 3) if shares else None,
+            "runs_all_rules_passed": _rate(scored, lambda r: r["hidden"]["rules"]["passed"] == r["hidden"]["rules"]["total"]),
+            "per_case": {r["case"]: "%d/%d%s" % (r["hidden"]["rules"]["passed"], r["hidden"]["rules"]["total"],
+                                                  "" if r["hidden"].get("spec_ok") else " spec-FAIL")
+                         for r in sorted(scored, key=lambda r: r["case"])},
+        }
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--rules" in args:   # analyze --rules <runs.jsonl>   (cases-v4, descriptive)
+        path = [a for a in args if a != "--rules"][0]
+        rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
+        print(json.dumps(rules_summary(rows), indent=2, default=str))
+        return
     if "--v6" in args:      # analyze --v6 <runs.jsonl>
         path = [a for a in args if a != "--v6"][0]
         rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]

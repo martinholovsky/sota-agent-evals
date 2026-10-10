@@ -657,3 +657,18 @@ def test_split_results_withholds_on_a_short_parse_and_skips_v3_suites():
     assert split_results(_V, 6)["rules"] is None                 # one result unaccounted for
     v3 = "\n".join(l for l in _V.splitlines() if "test_rules" not in l and "stale" not in l)
     assert split_results(v3, 3) == {}
+
+
+def test_rules_summary_pools_rule_tests_and_counts_unscored():
+    from agent_evals.analyze import rules_summary
+    def row(case, passed, total, spec=True, rules=True):
+        return {"case": case, "arm": "installed", "sample": 0, "error": None,
+                "contamination": {"treatment_present": True, "skill_calls": 1},
+                "hidden": {"ok": spec and passed == total,
+                           "rules": {"passed": passed, "total": total} if rules else None,
+                           "spec_ok": spec}}
+    s = rules_summary([row("w01", 1, 3), row("w02", 2, 2), row("w03", 0, 2, spec=False),
+                       row("w04", 0, 0, rules=False)])["installed"]
+    assert s["rule_tests_passed"] == {"k": 3, "n": 7, "rate": round(3 / 7, 3)}
+    assert s["unscored_or_excluded"] == 1 and s["spec_ok"]["k"] == 2
+    assert s["runs_all_rules_passed"]["k"] == 1 and s["per_case"]["w03"] == "0/2 spec-FAIL"

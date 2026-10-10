@@ -1,0 +1,10 @@
+[
+ {"test": "test_regex_metacharacters_match_literally", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "User text placed *inside* a pattern goes through the language's escaper (`re.escape`, `regexp.QuoteMeta`, `Regexp.escape`, `quotemeta`)."},
+ {"test": "test_unbalanced_paren_is_plain_text", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "User text placed *inside* a pattern goes through the language's escaper (`re.escape`, `regexp.QuoteMeta`, `Regexp.escape`, `quotemeta`)."},
+ {"test": "test_catastrophic_pattern_finishes_quickly", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Any regex with nested/overlapping quantifiers (`(a+)+`, `(a|a)*`, `(\\w+\\s?)*`) applied to unbounded input can pin a CPU core with ~40 chars."},
+ {"test": "test_catastrophic_pattern_finishes_quickly", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "User text placed *inside* a pattern goes through the language's escaper (`re.escape`, `regexp.QuoteMeta`, `Regexp.escape`, `quotemeta`)."}
+]

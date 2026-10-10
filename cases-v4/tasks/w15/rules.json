@@ -1,0 +1,8 @@
+[
+ {"test": "test_dotdot_name_does_not_escape", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "User-controlled *target* of file writes (log path, export path, config path from input) is arbitrary-file-write → RCE via cron/webroot/`.ssh` drops; same containment rules apply to writes, harder."},
+ {"test": "test_dotdot_name_does_not_escape", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Resolve to an absolute canonical path (`realpath`, `Path.resolve`, `filepath.Clean` + abs) and verify containment within the intended base dir with a path-aware check (`is_relative_to`), not `startswith`"},
+ {"test": "test_absolute_name_does_not_escape", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "`os.path.join(base, user)` discards `base` entirely when `user` is absolute (`/etc/passwd`) — join, then resolve, then containment-check; never trust the join alone"}
+]

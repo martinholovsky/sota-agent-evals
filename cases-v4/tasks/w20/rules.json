@@ -1,0 +1,12 @@
+[
+ {"test": "test_password_change_revokes_existing_sessions", "file": "skills/sota-code-security/rules/17-sessions-and-tokens.md",
+  "quote": "On password change or \"log out everywhere\": revoke all of the user's sessions. Maintain a session registry to make this possible."},
+ {"test": "test_password_change_revokes_existing_sessions", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "Without that check, a borrowed unlocked session becomes a permanent takeover. Afterwards, revoke the other sessions (rules/17 §2) and notify the user (below)."},
+ {"test": "test_idle_session_expires", "file": "skills/sota-code-security/rules/17-sessions-and-tokens.md",
+  "quote": "Expiry: idle timeout AND absolute timeout (e.g. 4–8h for a full-day office app) regardless of activity (CWE-613), both computed from **server-side timestamps**"},
+ {"test": "test_active_session_still_has_an_absolute_lifetime", "file": "skills/sota-code-security/rules/17-sessions-and-tokens.md",
+  "quote": "Expiry: idle timeout AND absolute timeout (e.g. 4–8h for a full-day office app) regardless of activity (CWE-613), both computed from **server-side timestamps**"},
+ {"test": "test_token_comes_from_a_csprng", "file": "skills/sota-code-security/rules/17-sessions-and-tokens.md",
+  "quote": "Session IDs: ≥ 128 bits from a CSPRNG, opaque (no encoded user data), stored server-side or in a sealed cookie."}
+]

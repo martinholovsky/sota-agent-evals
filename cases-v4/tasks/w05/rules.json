@@ -1,0 +1,12 @@
+[
+ {"test": "test_unknown_email_looks_like_known_email", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "Return the **same error and similar timing** for \"no such user\" vs \"wrong password\" (account enumeration, CWE-204); apply equally to registration and password-reset responses."},
+ {"test": "test_unknown_email_looks_like_known_email", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "single-use, ≤ 1h expiry, stored hashed, invalidated on use *and* on password change; don't reveal account existence in the response."},
+ {"test": "test_code_is_single_use", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "single-use, ≤ 1h expiry, stored hashed, invalidated on use *and* on password change; don't reveal account existence in the response."},
+ {"test": "test_code_stops_working_after_an_hour", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "single-use, ≤ 1h expiry, stored hashed, invalidated on use *and* on password change; don't reveal account existence in the response."},
+ {"test": "test_code_is_not_stored_in_plaintext", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "single-use, ≤ 1h expiry, stored hashed, invalidated on use *and* on password change; don't reveal account existence in the response."}
+]

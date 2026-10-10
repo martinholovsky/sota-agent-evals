@@ -1,0 +1,8 @@
+[
+ {"test": "test_burst_from_one_caller_is_refused", "file": "skills/sota-code-security/rules/06-memory-resource-safety.md",
+  "quote": "Rate limiting: per-principal (user/API key) primary, per-IP secondary (IPv6: limit per /64); token-bucket at the edge plus per-endpoint costs for expensive operations (search, export, password hashing"},
+ {"test": "test_limit_is_keyed_to_the_caller", "file": "skills/sota-api-design/rules/07-security-operations.md",
+  "quote": "**Key by authenticated principal** (API key/account), not IP, for authed traffic"},
+ {"test": "test_limit_is_keyed_to_the_caller", "file": "skills/sota-code-security/rules/06-memory-resource-safety.md",
+  "quote": "Rate limiting: per-principal (user/API key) primary, per-IP secondary"}
+]

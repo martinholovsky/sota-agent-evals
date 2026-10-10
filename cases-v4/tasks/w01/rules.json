@@ -1,0 +1,8 @@
+[
+ {"test": "test_stale_timestamp_is_rejected", "file": "skills/sota-api-design/rules/06-webhooks.md",
+  "quote": "Check timestamp within tolerance (±5 min) → otherwise reject (replay window)."},
+ {"test": "test_future_timestamp_is_rejected", "file": "skills/sota-api-design/rules/06-webhooks.md",
+  "quote": "Check timestamp within tolerance (±5 min) → otherwise reject (replay window)."},
+ {"test": "test_duplicate_event_id_is_processed_once", "file": "skills/sota-api-design/rules/06-webhooks.md",
+  "quote": "Within the window: **dedupe on `webhook-id`/event `id`** — store processed IDs"}
+]

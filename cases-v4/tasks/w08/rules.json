@@ -1,0 +1,27 @@
+[
+ {
+  "test": "test_dotdot_entry_does_not_escape",
+  "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Treat archive extraction as path traversal (Zip Slip, CWE-22): validate every entry name post-join; reject absolute paths and symlink entries;"
+ },
+ {
+  "test": "test_dotdot_entry_does_not_escape",
+  "file": "skills/sota-code-security/rules/09-untrusted-data-ingestion.md",
+  "quote": "Validate every entry path post-join and reject absolute/`..`/symlink entries"
+ },
+ {
+  "test": "test_absolute_entry_does_not_escape",
+  "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Treat archive extraction as path traversal (Zip Slip, CWE-22): validate every entry name post-join; reject absolute paths and symlink entries;"
+ },
+ {
+  "test": "test_absolute_entry_does_not_escape",
+  "file": "skills/sota-code-security/rules/09-untrusted-data-ingestion.md",
+  "quote": "Validate every entry path post-join and reject absolute/`..`/symlink entries"
+ },
+ {
+  "test": "test_high_ratio_entry_is_refused",
+  "file": "skills/sota-code-security/rules/09-untrusted-data-ingestion.md",
+  "quote": "Independently of count, enforce a **decompressed- size cap and a compression-ratio cap** (e.g. reject >100:1 or >total budget) by metering bytes *as you stream the inflate*, not by trusting the header."
+ }
+]

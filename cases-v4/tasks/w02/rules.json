@@ -1,0 +1,8 @@
+[
+ {"test": "test_private_ip_destinations_are_rejected", "file": "skills/sota-api-design/rules/06-webhooks.md",
+  "quote": "**Validate at registration AND at every send** (DNS changes between the two — rebinding): resolve the hostname, reject private/reserved ranges — `10/8, 172.16/12, 192.168/16, 127/8, 169.254/16` (cloud metadata!), `::1`,"},
+ {"test": "test_hostname_resolving_to_private_ip_is_rejected", "file": "skills/sota-api-design/rules/06-webhooks.md",
+  "quote": "**Validate at registration AND at every send** (DNS changes between the two — rebinding): resolve the hostname, reject private/reserved ranges —"},
+ {"test": "test_hostname_resolving_to_private_ip_is_rejected", "file": "skills/sota-code-security/rules/01-input-injection.md",
+  "quote": "Resolve DNS, then verify **every** resolved IP is public."}
+]

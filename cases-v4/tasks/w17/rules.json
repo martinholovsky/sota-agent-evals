@@ -1,0 +1,8 @@
+[
+ {"test": "test_key_comes_from_a_csprng", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "API keys are passwords for machines: generate ≥ 256-bit from CSPRNG with a recognizable prefix for secret scanning"},
+ {"test": "test_key_has_at_least_256_bits", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "API keys are passwords for machines: generate ≥ 256-bit from CSPRNG with a recognizable prefix for secret scanning"},
+ {"test": "test_plaintext_key_is_not_stored", "file": "skills/sota-code-security/rules/02-authentication.md",
+  "quote": "**store only a hash** (SHA-256 is fine — keys are high-entropy, no argon2 needed), show plaintext once at creation."}
+]
