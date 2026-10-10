@@ -125,3 +125,33 @@ def shipped_broken(result: dict, error, tree_changed: bool, hidden_ok) -> bool |
     if hidden_ok is None or not tree_changed:
         return None
     return hidden_ok is False
+
+
+# Routing depth (v5 primary). Counted from tool calls only, so a rules file the model saw by
+# any other means is not counted -- the direction that can only UNDER-state depth.
+RULES_FILE = re.compile(r"skills/sota-[a-z0-9-]+/rules/\d\d-[^/\s\"']*\.md")
+SKILL_FILE = re.compile(r"skills/sota-[a-z0-9-]+/SKILL\.md")
+
+
+def depth(tool_calls: list) -> dict:
+    """How far past the router a run went. `rules_read` (primary) = a Read of a rules file, the
+    file that holds the rules and the Audit checklist. `rules_named` also counts any other tool
+    whose input names one (Bash cat, Grep over it). `further_skill` = a Skill call to a sota
+    skill other than the router; `past_router` = either of those or a Read of a skill's SKILL.md."""
+    skills, rules_read, rules_named, skill_md = [], 0, 0, 0
+    for c in tool_calls:
+        name, inp = c.get("name"), c.get("input") or {}
+        if name == "Skill":
+            s = str(inp.get("skill") or "")
+            skills.append(s.split(":")[-1])
+        text = " ".join(str(v) for v in inp.values())
+        if RULES_FILE.search(text):
+            rules_named += 1
+            if name == "Read":
+                rules_read += 1
+        if name == "Read" and SKILL_FILE.search(text):
+            skill_md += 1
+    further = [s for s in skills if s.startswith("sota-")]
+    return {"skills": skills, "further_skill": bool(further), "rules_read": rules_read,
+            "rules_named": rules_named,
+            "past_router": bool(further or rules_read or rules_named or skill_md)}

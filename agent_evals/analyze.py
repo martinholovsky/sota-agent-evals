@@ -125,8 +125,80 @@ def analyze(rows, hypotheses=None, manipulation_check=False):
     return out
 
 
+# v5 (PRE-REGISTRATION-v5.md): the SAME `installed` arm run twice at the same time, once per
+# router. Primary = share of valid runs that Read >= 1 rules file. Frozen before any v5 run.
+V5_MIN_DIFF, V5_NULL_MAX, V5_ALPHA = 0.20, 0.05, 0.05
+
+
+def fisher_one_sided(c_pos: int, c_n: int, t_pos: int, t_n: int) -> float:
+    """Fisher's exact test, one-sided: P(treatment positives >= observed | both margins)."""
+    from math import comb
+    k_all, n_all = c_pos + t_pos, c_n + t_n
+    return sum(comb(t_n, k) * comb(c_n, k_all - k)
+               for k in range(t_pos, min(t_n, k_all) + 1)) / comb(n_all, k_all)
+
+
+def _rate(rows, pred):
+    return {"k": sum(1 for r in rows if pred(r)), "n": len(rows),
+            "rate": round(sum(1 for r in rows if pred(r)) / len(rows), 3) if rows else None}
+
+
+def analyze_v5(control: list, treatment: list) -> dict:
+    out = {"arms": {}, "invalid": []}
+    shas = {}
+    for label, rows in (("control", control), ("treatment", treatment)):
+        s = {r.get("router_sha") for r in rows}
+        if len(s) != 1 or None in s:
+            out["invalid"].append("%s file mixes routers or lacks router_sha: %s" % (label, sorted(map(str, s))))
+        shas[label] = next(iter(s)) if len(s) == 1 else None
+        excl = defaultdict(int)
+        for r in rows:
+            why = excluded(r) or (None if r["arm"] == "installed" else "wrong-arm")
+            if why:
+                excl[why] += 1
+        valid = [r for r in rows if r["arm"] == "installed" and not excluded(r)]
+        costs = [(r.get("result") or {}).get("total_cost_usd") or 0.0 for r in valid]
+        turns = [(r.get("result") or {}).get("num_turns") or 0 for r in valid]
+        hp = [value(r, "hidden_pass") for r in valid if value(r, "hidden_pass") is not None]
+        out["arms"][label] = {
+            "router_sha": shas[label], "rows": len(rows), "excluded": dict(excl),
+            "excluded_share": round(sum(excl.values()) / len(rows), 3) if rows else None,
+            "skill_call_rate": _rate(valid, lambda r: ((r.get("contamination") or {}).get("skill_calls") or 0) > 0),
+            "rules_read": _rate(valid, lambda r: (r.get("depth") or {}).get("rules_read", 0) > 0),
+            "rules_named": _rate(valid, lambda r: (r.get("depth") or {}).get("rules_named", 0) > 0),
+            "further_skill": _rate(valid, lambda r: bool((r.get("depth") or {}).get("further_skill"))),
+            "past_router": _rate(valid, lambda r: bool((r.get("depth") or {}).get("past_router"))),
+            "hidden_pass": round(sum(hp) / len(hp), 3) if hp else None,
+            "mean_cost_usd": round(sum(costs) / len(costs), 4) if costs else None,
+            "mean_turns": round(sum(turns) / len(turns), 2) if turns else None,
+        }
+        if any("depth" not in r for r in valid):
+            out["invalid"].append("%s has rows without a depth record" % label)
+    if shas.get("control") and shas.get("control") == shas.get("treatment"):
+        out["invalid"].append("both files ran the same router %s" % shas["control"])
+    c, t = out["arms"]["control"], out["arms"]["treatment"]
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    if any((a["skill_call_rate"]["rate"] or 0) < MANIPULATION_MIN for a in (c, t)):
+        out["verdict"] = "MANIPULATION FAILED"
+        return out
+    diff = t["rules_read"]["rate"] - c["rules_read"]["rate"]
+    p = fisher_one_sided(c["rules_read"]["k"], c["rules_read"]["n"], t["rules_read"]["k"], t["rules_read"]["n"])
+    out["primary"] = {"diff": round(diff, 3), "fisher_one_sided_p": round(p, 4)}
+    out["verdict"] = ("SUPPORTED" if p < V5_ALPHA and diff >= V5_MIN_DIFF
+                      else "NULL" if diff <= V5_NULL_MAX else "INCONCLUSIVE")
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in (c, t))
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--v5" in args:      # analyze --v5 <control runs.jsonl> <treatment runs.jsonl>
+        c_path, t_path = [a for a in args if a != "--v5"]
+        load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v5(load(c_path), load(t_path)), indent=2, default=str))
+        return
     hyps = HYPOTHESES_V4 if "--v4" in args else HYPOTHESES_V2 if "--v2" in args else HYPOTHESES
     path = [a for a in args if a not in ("--v2", "--v4")][0]
     rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]

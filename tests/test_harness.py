@@ -416,3 +416,84 @@ def test_manipulation_check_is_v4_only():
     v2 = analyze(rows, HYPOTHESES_V2)   # frozen analyses are never rewritten
     assert "MANIPULATION FAILED" not in {h.get("verdict") for h in v2["hypotheses"]}
 
+
+
+# ---- routing depth (v5 primary) ----------------------------------------------------------
+_R = "/home/u/.claude/skills/sota-python/rules/07-frameworks-testing.md"
+
+
+@pytest.mark.parametrize("calls,want", [
+    # router only -- v4's modal run: 0 further, not past
+    ([{"name": "Skill", "input": {"skill": "sota"}}],
+     {"further_skill": False, "rules_read": 0, "rules_named": 0, "past_router": False}),
+    # a Read of a rules file is the primary positive
+    ([{"name": "Skill", "input": {"skill": "sota"}}, {"name": "Read", "input": {"file_path": _R}}],
+     {"further_skill": False, "rules_read": 1, "rules_named": 1, "past_router": True}),
+    # Bash cat names it but is not a Read: secondary only
+    ([{"name": "Bash", "input": {"command": "cat " + _R}}],
+     {"further_skill": False, "rules_read": 0, "rules_named": 1, "past_router": True}),
+    # a plugin-namespaced further skill counts; the router alone does not
+    ([{"name": "Skill", "input": {"skill": "sota-skills:sota-python"}}],
+     {"further_skill": True, "rules_read": 0, "rules_named": 0, "past_router": True}),
+    # a SKILL.md Read is past the router but not a rules file
+    ([{"name": "Read", "input": {"file_path": "/x/skills/sota-python/SKILL.md"}}],
+     {"further_skill": False, "rules_read": 0, "rules_named": 0, "past_router": True}),
+    # near-misses that must NOT count: the router's own rules, a non-sota rules dir, a case file
+    ([{"name": "Read", "input": {"file_path": "/x/skills/sota/rules/02-build-workflow.md"}},
+      {"name": "Read", "input": {"file_path": "/x/other/rules/01-a.md"}},
+      {"name": "Read", "input": {"file_path": "/ws/src/rules.py"}}],
+     {"further_skill": False, "rules_read": 0, "rules_named": 0, "past_router": False}),
+])
+def test_depth(calls, want):
+    from agent_evals.score import depth
+    got = depth(calls)
+    assert {k: got[k] for k in want} == want
+
+
+# ---- v5 analysis: two routers, one arm -------------------------------------------------
+def _v5_rows(sha, k_rules, n=20, skill_calls=1):
+    return [{"case": "t%02d" % i, "arm": "installed", "sample": 0, "error": None,
+             "router_sha": sha, "hidden": {"ok": True},
+             "contamination": {"treatment_present": True, "skill_calls": skill_calls},
+             "depth": {"rules_read": 1 if i < k_rules else 0, "rules_named": 0,
+                       "further_skill": False, "past_router": i < k_rules},
+             "result": {"total_cost_usd": 0.3, "num_turns": 10}} for i in range(n)]
+
+
+def test_fisher_one_sided_hand_value():
+    from agent_evals.analyze import fisher_one_sided
+    assert abs(fisher_one_sided(0, 20, 5, 20) - 15504 / 658008) < 1e-12
+    assert fisher_one_sided(3, 20, 3, 20) > 0.5          # no difference is far from significant
+
+
+@pytest.mark.parametrize("c_k,t_k,want", [
+    (0, 8, "SUPPORTED"),        # p ~ 0.002, diff 0.40
+    (0, 1, "NULL"),             # diff 0.05 is the null band's edge
+    (0, 3, "INCONCLUSIVE"),     # diff 0.15: p ~ 0.12, below the 0.20 bar
+    (5, 4, "NULL"),             # a treatment that does worse is a null, not support
+])
+def test_v5_verdicts(c_k, t_k, want):
+    from agent_evals.analyze import analyze_v5
+    assert analyze_v5(_v5_rows("aaaa", c_k), _v5_rows("bbbb", t_k))["verdict"] == want
+
+
+def test_v5_refuses_same_router_and_mixed_files():
+    from agent_evals.analyze import analyze_v5
+    assert analyze_v5(_v5_rows("aaaa", 0), _v5_rows("aaaa", 8))["verdict"] == "INVALID"
+    mixed = _v5_rows("bbbb", 8)[:10] + _v5_rows("cccc", 8)[10:]
+    assert analyze_v5(_v5_rows("aaaa", 0), mixed)["verdict"] == "INVALID"
+
+
+def test_v5_manipulation_check_before_verdict():
+    from agent_evals.analyze import analyze_v5
+    v = analyze_v5(_v5_rows("aaaa", 0), _v5_rows("bbbb", 8, skill_calls=0))
+    assert v["verdict"] == "MANIPULATION FAILED"
+
+
+def test_row_records_depth_and_router(tmp_path, fake_sota, monkeypatch):
+    from agent_evals import cli
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setattr(cli, "run_one", _fake_run_one(0.01))
+    cli.cmd_run(_args(tmp_path, fake_sota, samples=1))
+    rows = [json.loads(l) for l in (tmp_path / "out" / "runs.jsonl").read_text().splitlines()]
+    assert rows and all("depth" in r and len(r["router_sha"]) == 16 for r in rows)

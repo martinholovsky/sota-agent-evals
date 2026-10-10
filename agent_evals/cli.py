@@ -22,7 +22,7 @@ from pathlib import Path
 
 from .arms import ARMS, cleanup, parse_arms, sota_skill_names
 from .runner import RunConfig, options_for, run_one
-from .score import contamination, hidden_pass, shipped_broken, tree_changed, unverified_done
+from .score import contamination, depth, hidden_pass, shipped_broken, tree_changed, unverified_done
 from .workspace import load_cases
 
 HERE = Path(__file__).resolve().parent.parent
@@ -98,6 +98,12 @@ def cmd_dry_run(a) -> int:
     return 0
 
 
+def router_sha(sota_root: Path) -> str:
+    """Which router a row ran against: v5 compares two, and the analysis refuses mixed files."""
+    import hashlib
+    return hashlib.sha256((sota_root / "skills" / "sota" / "SKILL.md").read_bytes()).hexdigest()[:16]
+
+
 def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
     changed = tree_changed(ws)
     hidden = hidden_pass(case.dir, ws, unsafe_local=a.unsafe_local_scoring)
@@ -113,6 +119,8 @@ def _row(arm, case, sample, ws, tr, a, sota_skills) -> dict:
         # the hook's treatment check: it writes its ledger under .git/ when it runs at all.
         # Without this a hook that silently never registered would read as "no effect" on H1.
         "hook_ledger": (ws / ".git" / "sota-verified-done").is_dir(),
+        "depth": depth(tr.tool_calls),
+        "router_sha": router_sha(a.sota_root),
     }
 
 
