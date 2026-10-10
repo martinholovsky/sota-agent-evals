@@ -80,3 +80,7 @@ A `preflight` PASS and a `sandbox-probe` PASS against the treatment root, as in 
 
 None yet. Any change after this file is committed is listed here with its date and reason,
 before the result it could affect is read.
+
+None before the result. Two items found **after** the run (a budget guard reading a counter both
+invocations share, and a new stderr notice) are recorded in the
+[report](reports/2026-10-10-v5/REPORT.md#deviations-recorded-after-the-run); neither affected a row.

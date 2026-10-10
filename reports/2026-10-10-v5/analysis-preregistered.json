@@ -1,0 +1,79 @@
+{
+  "arms": {
+    "control": {
+      "router_sha": "4e2540fca371fba7",
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_read": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "rules_named": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "further_skill": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "past_router": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "hidden_pass": 1.0,
+      "mean_cost_usd": 0.3955,
+      "mean_turns": 21.25
+    },
+    "treatment": {
+      "router_sha": "e21306b56b285b45",
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_read": {
+        "k": 1,
+        "n": 20,
+        "rate": 0.05
+      },
+      "rules_named": {
+        "k": 1,
+        "n": 20,
+        "rate": 0.05
+      },
+      "further_skill": {
+        "k": 3,
+        "n": 20,
+        "rate": 0.15
+      },
+      "past_router": {
+        "k": 4,
+        "n": 20,
+        "rate": 0.2
+      },
+      "hidden_pass": 1.0,
+      "mean_cost_usd": 0.4109,
+      "mean_turns": 21.35
+    }
+  },
+  "invalid": [],
+  "primary": {
+    "diff": 0.05,
+    "fisher_one_sided_p": 0.5
+  },
+  "verdict": "NULL",
+  "compromised": false
+}
