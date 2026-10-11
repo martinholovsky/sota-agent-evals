@@ -58,8 +58,14 @@ operator's decision.
 
 ## Spend
 
-SDK estimate $7.12 plus $0.23 preflight and $0.04 probe. Account readings are pending; the counter
-lags.
+| reading | account usage | note |
+|---|---|---|
+| before the gates, 2026-10-10 22:37 CEST | $880.7627 | (v6's settled reading) |
+| 2026-10-10 23:12 CEST | $886.90 | +$6.14, gates included |
+| 2026-10-11 14:38 CEST | $886.9018 | +$0.00 in 15 h: settled. **The calibration cost $6.14** with gates |
+
+The SDK estimate was $7.12 for the 20 runs, plus $0.23 preflight and $0.04 probe; the account, the
+budget of record, settled lower.
 
 ## Limits
 
