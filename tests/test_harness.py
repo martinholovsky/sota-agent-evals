@@ -819,3 +819,21 @@ def test_v7_four_arms_secondaries():
     assert nohint["verdict"] == "SUPPORTED"                        # the primary does not depend on it
     assert nohint["secondary"]["secondary: depth hook"]["verdict"] == "MANIPULATION FAILED"
     assert analyze_v7(_v7_four(hint_leak=True))["verdict"] == "INVALID"
+
+
+# ---- v8: (d') full-read hook vs v7's installed rows ---------------------------------------
+def test_v8_paired_against_v7_control_and_validity():
+    from agent_evals.analyze import analyze_v8
+    four = _v7_four(depth_up=6)
+    v8 = [r for r in four if r["arm"] == "installed+depth"]
+    v7 = [r for r in four if r["arm"] != "installed+depth"]
+    got = analyze_v8(v8, v7)
+    assert got["verdict"] == "SUPPORTED" and got["primary"]["paired_cases"] == 20
+    assert analyze_v8([r for r in _v7_four() if r["arm"] == "installed+depth"], v7)["verdict"] == "NULL"
+    assert analyze_v8(v8 + [dict(v8[0], arm="installed")], v7)["verdict"] == "INVALID"     # stray arm
+    other = [dict(r, router_sha="bbbb") for r in v8]
+    assert analyze_v8(other, v7)["verdict"] == "INVALID"                                   # router moved
+    leak = [dict(r, context=dict(r["context"], hint_router=1)) if r["arm"] == "installed" else r for r in v7]
+    assert analyze_v8(v8, leak)["verdict"] == "INVALID"                                    # control got the hook
+    nohint = [r for r in _v7_four(depth_up=6, hint=False) if r["arm"] == "installed+depth"]
+    assert analyze_v8(nohint, v7)["verdict"] == "MANIPULATION FAILED"

@@ -424,8 +424,51 @@ def analyze_v7(rows: list) -> dict:
     return out
 
 
+def analyze_v8(rows: list, v7_rows: list) -> dict:
+    """v8 (PRE-REGISTRATION-v8.md): ROADMAP 73 (d'), the depth hook asking for a FULL read of one or
+    two chosen rules files. Treatment = this file's `installed+depth` rows; control = v7's
+    `installed` rows (same root skills/, router, model and cases), reused to save a paid arm. The
+    same paired rule as v7. Validity: one router across both files, only the treatment arm here, the
+    hook's text reached no control row; manipulation: the hook's text reached >= 0.5 of the runs."""
+    out = {"arms": {}, "invalid": []}
+    control = [r for r in v7_rows if r["arm"] == "installed"]
+    shas = {r.get("router_sha") for r in rows + control}
+    if len(shas) != 1 or None in shas:
+        out["invalid"].append("files mix routers or lack router_sha: %s" % sorted(map(str, shas)))
+    stray = sorted({r["arm"] for r in rows} - {"installed+depth"})
+    if stray:
+        out["invalid"].append("unexpected arms %s" % stray)
+    if any(r.get("named_rules") for r in rows + control):
+        out["invalid"].append("a row's prompt named rules files")
+    if any(ctx(r).get("hint_router", 0) + ctx(r).get("hint_skill", 0) for r in control):
+        out["invalid"].append("a control row received the depth hook's text")
+    valid = {}
+    for label, mine in (("control (v7 installed)", control), ("treatment (installed+depth, full read)", rows)):
+        valid[label], out["arms"][label] = _arm_stats(mine)
+        if any(not ctx(r).get("transcripts") for r in valid[label]):
+            out["invalid"].append("%s has valid rows with no CLI transcript to score" % label)
+        if not out["arms"][label]["rule_tests_passed"]["n"]:
+            out["invalid"].append("%s has no valid rows" % label)
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    c, t = list(valid)
+    if (out["arms"][t]["hook_hint_rate"]["rate"] or 0) < MANIPULATION_MIN:
+        out["verdict"] = "MANIPULATION FAILED"
+        return out
+    out["primary"] = _paired(valid[c], valid[t])
+    out["verdict"] = out["primary"]["verdict"]
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in out["arms"].values())
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--v8" in args:      # analyze --v8 <v8 runs.jsonl> <v7 runs.jsonl>
+        p8, p7 = [a for a in args if a != "--v8"]
+        load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v8(load(p8), load(p7)), indent=2, default=str))
+        return
     if "--v7" in args:      # analyze --v7 <runs.jsonl>
         path = [a for a in args if a != "--v7"][0]
         rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
