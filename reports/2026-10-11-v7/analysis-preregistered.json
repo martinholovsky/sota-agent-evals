@@ -1,0 +1,264 @@
+{
+  "arms": {
+    "bare": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 33,
+        "n": 53,
+        "rate": 0.623
+      },
+      "runs_all_rules_passed": {
+        "k": 9,
+        "n": 20,
+        "rate": 0.45
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "mean_rules_lines_seen": 0.0,
+      "mean_cost_usd": 0.1191,
+      "mean_turns": 10.05
+    },
+    "installed": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 37,
+        "n": 53,
+        "rate": 0.698
+      },
+      "runs_all_rules_passed": {
+        "k": 12,
+        "n": 20,
+        "rate": 0.6
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 5,
+        "n": 20,
+        "rate": 0.25
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 26.8,
+      "mean_cost_usd": 0.3662,
+      "mean_turns": 19.35
+    },
+    "installed+depth": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 38,
+        "n": 53,
+        "rate": 0.717
+      },
+      "runs_all_rules_passed": {
+        "k": 13,
+        "n": 20,
+        "rate": 0.65
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 14,
+        "n": 20,
+        "rate": 0.7
+      },
+      "hook_hint_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 78.7,
+      "mean_cost_usd": 0.4266,
+      "mean_turns": 23.5
+    },
+    "installed+named": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 46,
+        "n": 53,
+        "rate": 0.868
+      },
+      "runs_all_rules_passed": {
+        "k": 16,
+        "n": 20,
+        "rate": 0.8
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "mean_rules_lines_seen": 448.2,
+      "mean_cost_usd": 0.4423,
+      "mean_turns": 19.45
+    }
+  },
+  "invalid": [],
+  "secondary": {
+    "secondary: depth hook": {
+      "paired_cases": 20,
+      "control_rate": 0.698,
+      "treatment_rate": 0.717,
+      "diff": 0.019,
+      "sign_flip_one_sided_p": 0.5,
+      "cases_up": 1,
+      "cases_down": 0,
+      "per_case": {
+        "w01": "3 -> 3 of 3",
+        "w02": "0 -> 0 of 2",
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 2 of 2",
+        "w05": "4 -> 4 of 4",
+        "w06": "0 -> 0 of 3",
+        "w07": "0 -> 0 of 2",
+        "w08": "3 -> 3 of 3",
+        "w09": "3 -> 3 of 3",
+        "w10": "2 -> 2 of 2",
+        "w11": "2 -> 2 of 2",
+        "w12": "3 -> 3 of 3",
+        "w13": "3 -> 3 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "2 -> 2 of 2",
+        "w17": "3 -> 3 of 3",
+        "w18": "0 -> 0 of 2",
+        "w19": "3 -> 3 of 4",
+        "w20": "1 -> 1 of 4"
+      },
+      "verdict": "NULL",
+      "control": "installed",
+      "treatment": "installed+depth"
+    },
+    "secondary: library installed": {
+      "paired_cases": 20,
+      "control_rate": 0.623,
+      "treatment_rate": 0.698,
+      "diff": 0.075,
+      "sign_flip_one_sided_p": 0.125,
+      "cases_up": 3,
+      "cases_down": 0,
+      "per_case": {
+        "w01": "3 -> 3 of 3",
+        "w02": "0 -> 0 of 2",
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 1 of 2",
+        "w05": "3 -> 4 of 4",
+        "w06": "0 -> 0 of 3",
+        "w07": "0 -> 0 of 2",
+        "w08": "2 -> 3 of 3",
+        "w09": "3 -> 3 of 3",
+        "w10": "2 -> 2 of 2",
+        "w11": "0 -> 2 of 2",
+        "w12": "3 -> 3 of 3",
+        "w13": "3 -> 3 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "2 -> 2 of 2",
+        "w17": "3 -> 3 of 3",
+        "w18": "0 -> 0 of 2",
+        "w19": "3 -> 3 of 4",
+        "w20": "1 -> 1 of 4"
+      },
+      "verdict": "INCONCLUSIVE",
+      "control": "bare",
+      "treatment": "installed"
+    }
+  },
+  "primary": {
+    "paired_cases": 20,
+    "control_rate": 0.698,
+    "treatment_rate": 0.868,
+    "diff": 0.17,
+    "sign_flip_one_sided_p": 0.0156,
+    "cases_up": 6,
+    "cases_down": 0,
+    "per_case": {
+      "w01": "3 -> 3 of 3",
+      "w02": "0 -> 1 of 2",
+      "w03": "0 -> 0 of 2",
+      "w04": "1 -> 2 of 2",
+      "w05": "4 -> 4 of 4",
+      "w06": "0 -> 1 of 3",
+      "w07": "0 -> 2 of 2",
+      "w08": "3 -> 3 of 3",
+      "w09": "3 -> 3 of 3",
+      "w10": "2 -> 2 of 2",
+      "w11": "2 -> 2 of 2",
+      "w12": "3 -> 3 of 3",
+      "w13": "3 -> 3 of 3",
+      "w14": "2 -> 2 of 2",
+      "w15": "2 -> 2 of 2",
+      "w16": "2 -> 2 of 2",
+      "w17": "3 -> 3 of 3",
+      "w18": "0 -> 0 of 2",
+      "w19": "3 -> 4 of 4",
+      "w20": "1 -> 4 of 4"
+    },
+    "verdict": "SUPPORTED",
+    "control": "installed",
+    "treatment": "installed+named"
+  },
+  "verdict": "SUPPORTED",
+  "secondary_all_rules_fisher_p": 0.1504,
+  "compromised": false
+}
