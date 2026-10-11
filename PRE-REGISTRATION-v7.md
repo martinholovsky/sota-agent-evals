@@ -109,5 +109,45 @@ apart.
 
 ## Deviations
 
-None yet. Any change after this file is committed is listed here with its date and reason, before
-the result it could affect is read.
+### Amendment 1 — 2026-10-11 15:40 CEST, before any measurement run
+
+**What changed.** After the gates and the `w01` pilot, and before any measurement run, the operator
+asked for every open variant to go into v7: *"those tests are becoming quite expensive, so all
+variations will be embedded to v7"*. v7 therefore runs **four arms in one invocation**:
+
+| arm | role |
+|---|---|
+| `bare` | no library: the floor |
+| `installed` | the control, unchanged |
+| `installed+depth` | v6's opt-in `Skill` hook (SOTA-skills PR #528) |
+| `installed+named` | the treatment, unchanged |
+
+- **The primary is unchanged**: `installed` vs `installed+named`, with the same test, thresholds and
+  manipulation check.
+- **Two secondaries** apply the same paired rule (sign-flip, p < 0.05 and difference ≥ 0.09 for
+  SUPPORTED, ≤ 0.02 for NULL) separately:
+  - **depth hook**: `installed` vs `installed+depth`. Manipulation: the hook's text reached
+    ≥ 0.5 of the treatment's runs, as in v6.
+  - **library**: `bare` vs `installed`. Manipulation: ≥ 0.5 of `installed` runs invoked a skill,
+    as in v4.
+  - A secondary is reported with its own verdict and **does not qualify or replace the primary**.
+    A failed manipulation on a secondary voids only that secondary.
+  - No correction for multiple comparisons is applied. The secondaries are read as descriptive
+    evidence, and the report says so.
+- **Validity** now covers the whole file. Named rules may appear only in `installed+named`, and
+  the depth hook's text only in `installed+depth`. Either breach is **INVALID**.
+- **Root**: SOTA-skills PR #528 @ `330bc4a`, because the depth arm needs
+  `scripts/skill-depth-hook.py`. Its `skills/` and `scripts/install.sh` are identical to `main` @
+  `3a39878` (`git diff --stat 3a39878 330bc4a -- skills scripts/install.sh` is empty). The router
+  sha256[:16] is the same `4e2540fca371fba7`. Every arm runs against this one root.
+- **Harness**: `371002c` (the analysis for four arms; 137 tests).
+- **Execution**: `--arms bare,installed,installed+depth,installed+named`, 80 runs, concurrency 4.
+- **Gates**: `preflight` and `sandbox-probe` are re-run against the new root. The pilot for the
+  two primary arms passed on `w01` at 14:45. It ran against `3a39878`, whose `skills/` is
+  identical. A second pilot on `w01` covers `installed+depth` (the hook text must reach it) and
+  `bare`, and is not analysed.
+- **Budget**: account credit read 15:29 CEST: **$62.15**. Expected about $26–32 on the account.
+  The run uses `--total-budget-usd 45`; the guard requires $45.
+
+**What did not change**: the case set, model, SDK, per-run limits, samples, exclusions and the
+primary decision rule. No v7 measurement row existed when this amendment was committed.
