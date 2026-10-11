@@ -128,8 +128,11 @@ the measurement started.
 | 2026-10-11 14:38 CEST | $886.9018 | before the first gates (the calibration's settled reading) |
 | 2026-10-11 15:29 CEST | $887.8541 | after the first gates and the two-arm pilot: +$0.95 |
 | 2026-10-11 16:06 CEST | $910.7943 | +$23.89 since 14:38, everything included; **first reading, the counter lags** |
+| 2026-10-11 23:49 CEST | $919.9028 | **settled**: $919.85 at 22:10 and $919.90 at 23:49. Includes v8 |
 
-The SDK estimate is $27.08 for the 80 runs, plus about $2.00 for the two sets of gates and pilots. A second
-account reading follows when the counter has settled.
+The SDK estimate is $27.08 for the 80 runs, plus about $2.00 for the two sets of gates and pilots.
+The settled account figure for v7 and v8 together is **$33.00** (14:38 → 23:49). The SDK estimated
+$39.87 for both ($29.08 here, $10.79 for v8), so the account charged about 83% of the SDK estimate.
+The counter cannot split the two runs, because v8 started before v7's charges had settled.
 
 The transcripts (37 MB) and the final workspaces stay in the git-ignored `results/v7-2026-10-11/`.

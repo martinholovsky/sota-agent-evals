@@ -95,6 +95,9 @@ None.
 |---|---|---|
 | 2026-10-11 16:06 CEST | $910.7943 | v7's first reading; v7's counter had not settled |
 | 2026-10-11 22:10 CEST | $919.8501 | +$9.06 since, which includes v7's late charges and all of v8 |
+| 2026-10-11 23:49 CEST | $919.9028 | settled: +$0.05 since 22:10 |
 
-The SDK estimate for v8 is $9.96 for the 20 runs, plus about $0.83 for gates and pilot ($0.23 preflight, $0.04 probe, $0.56 pilot). The account
-cannot yet separate v8 from v7's lagging charges; the settled figures are taken together later.
+The SDK estimate for v8 is $9.96 for the 20 runs, plus about $0.83 for gates and pilot ($0.23
+preflight, $0.04 probe, $0.56 pilot). The account cannot separate v8 from v7's lagging charges.
+Together, v7 and v8 settled at **$33.00** (14:38 → 23:49), against $39.87 estimated by the SDK, so
+the account charged about 83% of the SDK estimate.

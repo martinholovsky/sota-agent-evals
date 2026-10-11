@@ -1,0 +1,310 @@
+{
+  "arms": {
+    "control (v7 installed)": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 37,
+        "n": 53,
+        "rate": 0.698
+      },
+      "runs_all_rules_passed": {
+        "k": 12,
+        "n": 20,
+        "rate": 0.6
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 5,
+        "n": 20,
+        "rate": 0.25
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 26.8,
+      "mean_cost_usd": 0.3662,
+      "mean_turns": 19.35,
+      "code_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "linked_table_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      }
+    },
+    "v8 (full-read hook)": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 36,
+        "n": 53,
+        "rate": 0.679
+      },
+      "runs_all_rules_passed": {
+        "k": 11,
+        "n": 20,
+        "rate": 0.55
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "hook_hint_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 472.1,
+      "mean_cost_usd": 0.4982,
+      "mean_turns": 23.6,
+      "code_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "linked_table_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      }
+    },
+    "installed+code": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 38,
+        "n": 53,
+        "rate": 0.717
+      },
+      "runs_all_rules_passed": {
+        "k": 12,
+        "n": 20,
+        "rate": 0.6
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 817.5,
+      "mean_cost_usd": 0.5792,
+      "mean_turns": 25.1,
+      "code_hint_rate": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "linked_table_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      }
+    },
+    "installed+linked": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 40,
+        "n": 53,
+        "rate": 0.755
+      },
+      "runs_all_rules_passed": {
+        "k": 13,
+        "n": 20,
+        "rate": 0.65
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "hook_hint_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 491.6,
+      "mean_cost_usd": 0.5285,
+      "mean_turns": 25.2,
+      "code_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "linked_table_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      }
+    }
+  },
+  "invalid": [],
+  "secondary": {
+    "secondary: linked index": {
+      "control": "control (v7 installed)",
+      "treatment": "installed+linked",
+      "manipulation": "linked_table_rate",
+      "manipulation_rate": 1.0,
+      "paired_cases": 20,
+      "control_rate": 0.698,
+      "treatment_rate": 0.755,
+      "diff": 0.057,
+      "sign_flip_one_sided_p": 0.25,
+      "cases_up": 3,
+      "cases_down": 1,
+      "per_case": {
+        "w01": "3 -> 3 of 3",
+        "w02": "0 -> 0 of 2",
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 2 of 2",
+        "w05": "4 -> 4 of 4",
+        "w06": "0 -> 0 of 3",
+        "w07": "0 -> 2 of 2",
+        "w08": "3 -> 2 of 3",
+        "w09": "3 -> 3 of 3",
+        "w10": "2 -> 2 of 2",
+        "w11": "2 -> 2 of 2",
+        "w12": "3 -> 3 of 3",
+        "w13": "3 -> 3 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "2 -> 2 of 2",
+        "w17": "3 -> 3 of 3",
+        "w18": "0 -> 0 of 2",
+        "w19": "3 -> 3 of 4",
+        "w20": "1 -> 2 of 4"
+      },
+      "verdict": "INCONCLUSIVE"
+    }
+  },
+  "descriptive": {
+    "descriptive: v8 -> linked (the table alone)": {
+      "control": "v8 (full-read hook)",
+      "treatment": "installed+linked",
+      "manipulation": "linked_table_rate",
+      "manipulation_rate": 1.0,
+      "paired_cases": 20,
+      "control_rate": 0.679,
+      "treatment_rate": 0.755,
+      "diff": 0.075,
+      "sign_flip_one_sided_p": 0.125,
+      "cases_up": 3,
+      "cases_down": 0,
+      "per_case": {
+        "w01": "3 -> 3 of 3",
+        "w02": "0 -> 0 of 2",
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 2 of 2",
+        "w05": "4 -> 4 of 4",
+        "w06": "0 -> 0 of 3",
+        "w07": "0 -> 2 of 2",
+        "w08": "2 -> 2 of 3",
+        "w09": "3 -> 3 of 3",
+        "w10": "2 -> 2 of 2",
+        "w11": "2 -> 2 of 2",
+        "w12": "3 -> 3 of 3",
+        "w13": "3 -> 3 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "2 -> 2 of 2",
+        "w17": "3 -> 3 of 3",
+        "w18": "0 -> 0 of 2",
+        "w19": "3 -> 3 of 4",
+        "w20": "1 -> 2 of 4"
+      }
+    }
+  },
+  "primary": {
+    "control": "control (v7 installed)",
+    "treatment": "installed+code",
+    "manipulation": "code_hint_rate",
+    "manipulation_rate": 0.95,
+    "paired_cases": 20,
+    "control_rate": 0.698,
+    "treatment_rate": 0.717,
+    "diff": 0.019,
+    "sign_flip_one_sided_p": 0.5,
+    "cases_up": 1,
+    "cases_down": 0,
+    "per_case": {
+      "w01": "3 -> 3 of 3",
+      "w02": "0 -> 0 of 2",
+      "w03": "0 -> 0 of 2",
+      "w04": "1 -> 1 of 2",
+      "w05": "4 -> 4 of 4",
+      "w06": "0 -> 0 of 3",
+      "w07": "0 -> 0 of 2",
+      "w08": "3 -> 3 of 3",
+      "w09": "3 -> 3 of 3",
+      "w10": "2 -> 2 of 2",
+      "w11": "2 -> 2 of 2",
+      "w12": "3 -> 3 of 3",
+      "w13": "3 -> 3 of 3",
+      "w14": "2 -> 2 of 2",
+      "w15": "2 -> 2 of 2",
+      "w16": "2 -> 2 of 2",
+      "w17": "3 -> 3 of 3",
+      "w18": "0 -> 0 of 2",
+      "w19": "3 -> 3 of 4",
+      "w20": "1 -> 2 of 4"
+    },
+    "verdict": "NULL"
+  },
+  "verdict": "NULL",
+  "compromised": false
+}
