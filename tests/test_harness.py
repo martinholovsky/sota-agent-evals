@@ -783,5 +783,39 @@ def test_v7_validity_and_manipulation():
     rows = _v7_rows(6)
     rows[0]["hidden"]["rules"] = None                        # an unscored row: excluded and counted
     got = analyze_v7(rows)
-    assert got["arms"]["control"]["excluded"] == {"rule results unscored": 1}
+    assert got["arms"]["installed"]["excluded"] == {"rule results unscored": 1}
     assert got["primary"]["paired_cases"] == 19
+    assert got["secondary"] and all(v["verdict"] == "NOT RUN"
+                                    for v in got["secondary"].values())   # two-arm file: none run
+
+
+def _v7_four(depth_up=0, lib_down=0, hint=True, hint_leak=False):
+    """Four arms on 20 cases x 2 rule tests. installed passes 1; named passes 2 in 6 cases; depth
+    passes one more in `depth_up` cases; bare passes one fewer in `lib_down` cases."""
+    rows = _v7_rows(6)
+    base = [r for r in rows if r["arm"] == "installed"]
+    for arm, delta_cases, delta in (("installed+depth", depth_up, +1), ("bare", lib_down, -1)):
+        for i, r in enumerate(base):
+            k = r["hidden"]["rules"]["passed"] + (delta if i < delta_cases else 0)
+            on = arm == "installed+depth" and hint
+            rows.append(dict(r, arm=arm, named_rules=[], hidden={"ok": k == 2, "spec_ok": True,
+                             "rules": {"passed": k, "total": 2}},
+                             contamination={"treatment_present": True, "skill_calls": int(arm != "bare")},
+                             context=dict(r["context"], hint_router=int(on), hint_skill=0)))
+    if hint_leak:
+        rows[0]["context"] = dict(rows[0]["context"], hint_skill=1)      # an `installed` row
+    return rows
+
+
+def test_v7_four_arms_secondaries():
+    from agent_evals.analyze import analyze_v7
+    got = analyze_v7(_v7_four(depth_up=6, lib_down=0))
+    assert got["verdict"] == "SUPPORTED"
+    assert got["secondary"]["secondary: depth hook"]["verdict"] == "SUPPORTED"
+    assert got["secondary"]["secondary: library installed"]["verdict"] == "NULL"
+    lib = analyze_v7(_v7_four(lib_down=6))["secondary"]["secondary: library installed"]
+    assert lib["verdict"] == "SUPPORTED" and (lib["control"], lib["treatment"]) == ("bare", "installed")
+    nohint = analyze_v7(_v7_four(depth_up=6, hint=False))
+    assert nohint["verdict"] == "SUPPORTED"                        # the primary does not depend on it
+    assert nohint["secondary"]["secondary: depth hook"]["verdict"] == "MANIPULATION FAILED"
+    assert analyze_v7(_v7_four(hint_leak=True))["verdict"] == "INVALID"

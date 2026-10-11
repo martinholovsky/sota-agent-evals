@@ -286,9 +286,17 @@ def rules_summary(rows: list) -> dict:
     return out
 
 
-V7_ARMS = ("installed", "installed+named")
+V7_ARMS = ("bare", "installed", "installed+depth", "installed+named")
 V7_MIN_DIFF, V7_NULL_MAX, V7_ALPHA = 0.09, 0.02, 0.05
-V7_MANIPULATION_MIN = 0.8   # the treatment exists to put rules text in context; below this it did not
+# (name, control, treatment, manipulation: (metric on the treatment arm, minimum share)).
+# The first is the PRIMARY; the others were added before any measurement run (PRE-REGISTRATION-v7
+# amendment 1) so that one invocation answers every open variant, and carry no verdict of their own
+# beyond the same rule applied separately.
+V7_COMPARISONS = [
+    ("primary: rules named", "installed", "installed+named", ("rules_in_context", 0.8)),
+    ("secondary: depth hook", "installed", "installed+depth", ("hook_hint_rate", MANIPULATION_MIN)),
+    ("secondary: library installed", "bare", "installed", ("skill_call_rate", MANIPULATION_MIN)),
+]
 
 
 def sign_flip_one_sided(diffs: list) -> float:
@@ -309,86 +317,110 @@ def _rules(r: dict):
     return (r.get("hidden") or {}).get("rules")
 
 
+def _arm_stats(mine: list) -> tuple:
+    excl = defaultdict(int)
+    for r in mine:
+        why = excluded(r) or ("rule results unscored" if not _rules(r) else None)
+        if why:
+            excl[why] += 1
+    valid = [r for r in mine if not excluded(r) and _rules(r)]
+    k = sum(_rules(r)["passed"] for r in valid)
+    n = sum(_rules(r)["total"] for r in valid)
+    costs = [(r.get("result") or {}).get("total_cost_usd") or 0.0 for r in valid]
+    turns = [(r.get("result") or {}).get("num_turns") or 0 for r in valid]
+    return valid, {
+        "rows": len(mine), "excluded": dict(excl),
+        "excluded_share": round(sum(excl.values()) / len(mine), 3) if mine else None,
+        "rule_tests_passed": {"k": k, "n": n, "rate": round(k / n, 3) if n else None},
+        "runs_all_rules_passed": _rate(valid, lambda r: _rules(r)["passed"] == _rules(r)["total"]),
+        "spec_ok": _rate(valid, lambda r: r["hidden"].get("spec_ok") is True),
+        "rules_in_context": _rate(valid, lambda r: bool(ctx(r).get("rules_in_context"))),
+        "hook_hint_rate": _rate(valid, lambda r: (ctx(r).get("hint_router", 0) + ctx(r).get("hint_skill", 0)) > 0),
+        "skill_call_rate": _rate(valid, lambda r: ((r.get("contamination") or {}).get("skill_calls") or 0) > 0),
+        "mean_rules_lines_seen": round(sum(ctx(r).get("rules_lines_seen", 0) for r in valid) / len(valid), 1) if valid else None,
+        "mean_cost_usd": round(sum(costs) / len(costs), 4) if costs else None,
+        "mean_turns": round(sum(turns) / len(turns), 2) if turns else None,
+    }
+
+
+def _paired(c_valid: list, t_valid: list) -> dict:
+    """Pooled rule tests over the cases scored in BOTH arms (a case's sample mean), and the exact
+    one-sided sign-flip test over the per-case differences."""
+    by = []
+    for valid in (c_valid, t_valid):
+        d = defaultdict(list)
+        for r in valid:
+            d[r["case"]].append(r)
+        by.append(d)
+    paired = sorted(set(by[0]) & set(by[1]))
+    mean = lambda rs, key: sum(_rules(r)[key] for r in rs) / len(rs)
+    diffs, tk, ck, pn, per_case = [], 0.0, 0.0, 0.0, {}
+    for case in paired:
+        cp, tp, tot = mean(by[0][case], "passed"), mean(by[1][case], "passed"), mean(by[1][case], "total")
+        diffs.append(tp - cp)
+        tk += tp; ck += cp; pn += tot
+        per_case[case] = "%g -> %g of %g" % (cp, tp, tot)
+    diff = (tk - ck) / pn if pn else 0.0
+    p = sign_flip_one_sided(diffs)
+    return {"paired_cases": len(paired), "control_rate": round(ck / pn, 3) if pn else None,
+            "treatment_rate": round(tk / pn, 3) if pn else None, "diff": round(diff, 3),
+            "sign_flip_one_sided_p": round(p, 4), "cases_up": sum(d > 0 for d in diffs),
+            "cases_down": sum(d < 0 for d in diffs), "per_case": per_case,
+            "verdict": ("SUPPORTED" if p < V7_ALPHA and diff >= V7_MIN_DIFF
+                        else "NULL" if diff <= V7_NULL_MAX else "INCONCLUSIVE")}
+
+
 def analyze_v7(rows: list) -> dict:
     """v7 (PRE-REGISTRATION-v7.md): does READING the cited rules change the outcome on cases-v4?
-    Primary = pooled RULE tests passed, paired by case; exact one-sided sign-flip test over the
-    per-case differences. Validity first, then the manipulation check, then the verdict."""
-    out = {"arms": {}, "invalid": []}
+    Primary = `installed` vs `installed+named`, pooled RULE tests paired by case, exact one-sided
+    sign-flip test. Secondaries (amendment 1) apply the same rule to the depth hook and to the
+    library itself. Validity covers the whole file; manipulation is checked per comparison."""
+    out = {"arms": {}, "invalid": [], "secondary": {}}
     shas = {r.get("router_sha") for r in rows}
     if len(shas) != 1 or None in shas:
         out["invalid"].append("file mixes routers or lacks router_sha: %s" % sorted(map(str, shas)))
-    stray = sorted({r["arm"] for r in rows} - set(V7_ARMS))
+    present = {r["arm"] for r in rows}
+    stray = sorted(present - set(V7_ARMS))
     if stray:
         out["invalid"].append("unexpected arms %s" % stray)
-    if any(r.get("named_rules") for r in rows if r["arm"] == V7_ARMS[0]):
-        out["invalid"].append("a control row's prompt named rules files: the arms are not separated")
-    if any(not r.get("named_rules") for r in rows if r["arm"] == V7_ARMS[1]):
-        out["invalid"].append("a treatment row's prompt named no rules files")
-    per = {}
-    for label, arm in (("control", V7_ARMS[0]), ("treatment", V7_ARMS[1])):
-        mine = [r for r in rows if r["arm"] == arm]
-        excl = defaultdict(int)
-        for r in mine:
-            why = excluded(r) or ("rule results unscored" if not _rules(r) else None)
-            if why:
-                excl[why] += 1
-        valid = [r for r in mine if not excluded(r) and _rules(r)]
-        if any(not ctx(r).get("transcripts") for r in valid):
-            out["invalid"].append("%s has valid rows with no CLI transcript to score" % label)
-        per[label] = valid
-        k = sum(_rules(r)["passed"] for r in valid)
-        n = sum(_rules(r)["total"] for r in valid)
-        costs = [(r.get("result") or {}).get("total_cost_usd") or 0.0 for r in valid]
-        turns = [(r.get("result") or {}).get("num_turns") or 0 for r in valid]
-        out["arms"][label] = {
-            "arm": arm, "rows": len(mine), "excluded": dict(excl),
-            "excluded_share": round(sum(excl.values()) / len(mine), 3) if mine else None,
-            "rule_tests_passed": {"k": k, "n": n, "rate": round(k / n, 3) if n else None},
-            "runs_all_rules_passed": _rate(valid, lambda r: _rules(r)["passed"] == _rules(r)["total"]),
-            "spec_ok": _rate(valid, lambda r: r["hidden"].get("spec_ok") is True),
-            "rules_in_context": _rate(valid, lambda r: bool(ctx(r).get("rules_in_context"))),
-            "skill_call_rate": _rate(valid, lambda r: ((r.get("contamination") or {}).get("skill_calls") or 0) > 0),
-            "mean_rules_lines_seen": round(sum(ctx(r).get("rules_lines_seen", 0) for r in valid) / len(valid), 1) if valid else None,
-            "mean_cost_usd": round(sum(costs) / len(costs), 4) if costs else None,
-            "mean_turns": round(sum(turns) / len(turns), 2) if turns else None,
-        }
-    c, t = out["arms"]["control"], out["arms"]["treatment"]
-    for label, a in (("control", c), ("treatment", t)):
-        if not a["rule_tests_passed"]["n"]:
-            out["invalid"].append("%s has no valid rows" % label)
+    if any(r.get("named_rules") for r in rows if r["arm"] != "installed+named"):
+        out["invalid"].append("a row outside installed+named had rules files named: the arms are not separated")
+    if any(not r.get("named_rules") for r in rows if r["arm"] == "installed+named"):
+        out["invalid"].append("an installed+named row's prompt named no rules files")
+    if any(ctx(r).get("hint_router", 0) + ctx(r).get("hint_skill", 0) for r in rows if r["arm"] != "installed+depth"):
+        out["invalid"].append("a row outside installed+depth received the depth hook's text")
+    valid = {}
+    for arm in V7_ARMS:
+        if arm not in present:
+            continue
+        valid[arm], out["arms"][arm] = _arm_stats([r for r in rows if r["arm"] == arm])
+        if any(not ctx(r).get("transcripts") for r in valid[arm]):
+            out["invalid"].append("%s has valid rows with no CLI transcript to score" % arm)
+        if not out["arms"][arm]["rule_tests_passed"]["n"]:
+            out["invalid"].append("%s has no valid rows" % arm)
+    for arm in ("installed", "installed+named"):
+        if arm not in present:
+            out["invalid"].append("primary arm %s has no rows" % arm)
     if out["invalid"]:
         out["verdict"] = "INVALID"
         return out
-    if (t["rules_in_context"]["rate"] or 0) < V7_MANIPULATION_MIN:
-        out["verdict"] = "MANIPULATION FAILED"
-        return out
-    # paired by case: the per-case mean over samples, for cases scored in BOTH arms
-    by = {lab: defaultdict(list) for lab in per}
-    for lab, valid in per.items():
-        for r in valid:
-            by[lab][r["case"]].append(r)
-    paired = sorted(set(by["control"]) & set(by["treatment"]))
-    mean = lambda rs, key: sum(_rules(r)[key] for r in rs) / len(rs)
-    diffs, pk, pn, ck = [], 0.0, 0.0, 0.0
-    out["per_case"] = {}
-    for case in paired:
-        cp, tp = mean(by["control"][case], "passed"), mean(by["treatment"][case], "passed")
-        tot = mean(by["treatment"][case], "total")
-        diffs.append(tp - cp)
-        pk += tp; ck += cp; pn += tot
-        out["per_case"][case] = "%g -> %g of %g" % (cp, tp, tot)
-    diff = (pk - ck) / pn if pn else 0.0
-    p = sign_flip_one_sided(diffs)
-    out["primary"] = {"paired_cases": len(paired), "control_rate": round(ck / pn, 3) if pn else None,
-                      "treatment_rate": round(pk / pn, 3) if pn else None, "diff": round(diff, 3),
-                      "sign_flip_one_sided_p": round(p, 4),
-                      "cases_up": sum(d > 0 for d in diffs), "cases_down": sum(d < 0 for d in diffs)}
+    for i, (name, c, t, (metric, floor)) in enumerate(V7_COMPARISONS):
+        if c not in valid or t not in valid:
+            res = {"verdict": "NOT RUN"}
+        elif (out["arms"][t][metric]["rate"] or 0) < floor:
+            res = {"verdict": "MANIPULATION FAILED", "manipulation": {metric: out["arms"][t][metric]}}
+        else:
+            res = _paired(valid[c], valid[t])
+        res["control"], res["treatment"] = c, t
+        if i == 0:
+            out["primary"], out["verdict"] = res, res["verdict"]
+        else:
+            out["secondary"][name] = res
+    c, t = out["arms"]["installed"], out["arms"]["installed+named"]
     out["secondary_all_rules_fisher_p"] = round(fisher_one_sided(
         c["runs_all_rules_passed"]["k"], c["runs_all_rules_passed"]["n"],
         t["runs_all_rules_passed"]["k"], t["runs_all_rules_passed"]["n"]), 4)
-    out["verdict"] = ("SUPPORTED" if p < V7_ALPHA and diff >= V7_MIN_DIFF
-                      else "NULL" if diff <= V7_NULL_MAX else "INCONCLUSIVE")
-    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in (c, t))
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in out["arms"].values())
     return out
 
 
