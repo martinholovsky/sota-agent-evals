@@ -40,6 +40,7 @@ class Arm:
     routing: bool = False  # the installer's routing layer: UserPromptSubmit hook, CLAUDE.md
                            # directive and listing-budget fraction, read from --sota-root's install.sh
     depth_hook: bool = False  # scripts/skill-depth-hook.py as a PostToolUse hook on Skill (v6)
+    named_rules: bool = False  # the prompt names the case's cited rules files (v7; runner.prompt_for)
 
 
 ARMS = {
@@ -53,6 +54,10 @@ ARMS = {
     # v6 (2026-10-10): `installed` plus SOTA-skills ROADMAP 73 option (c), the opt-in hook that
     # names the rules files after a skill loads. Read from --sota-root, never copied here.
     "installed+depth": Arm("installed+depth", library=True, hook=False, routing=True, depth_hook=True),
+    # v7 (2026-10-11): `installed` plus, in the prompt, the absolute paths (inside the run's own
+    # skills/ copy) of the rules files the case's RULE tests cite. Not a product design: it puts the
+    # rules in front of the model so v7 can ask whether READING them changes the outcome.
+    "installed+named": Arm("installed+named", library=True, hook=False, routing=True, named_rules=True),
 }
 
 

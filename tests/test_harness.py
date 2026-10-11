@@ -672,3 +672,116 @@ def test_rules_summary_pools_rule_tests_and_counts_unscored():
     assert s["rule_tests_passed"] == {"k": 3, "n": 7, "rate": round(3 / 7, 3)}
     assert s["unscored_or_excluded"] == 1 and s["spec_ok"]["k"] == 2
     assert s["runs_all_rules_passed"]["k"] == 1 and s["per_case"]["w03"] == "0/2 spec-FAIL"
+
+
+# ---- v7: the cited rules files named in the prompt ----------------------------------------
+_RULE = "skills/sota-shell-scripting/rules/01-x.md"
+
+
+def test_named_rules_prompt_names_the_runs_own_copy_and_fails_closed(fake_sota, tmp_path):
+    from agent_evals.runner import prompt_for
+    from agent_evals.workspace import Case
+    case = Case("w01", tmp_path, "Build the thing.", (_RULE,))
+    cd = A.build_config_dir(A.ARMS["installed+named"], fake_sota)
+    try:
+        p = prompt_for(A.ARMS["installed+named"], case, cd)
+        assert p.startswith("Build the thing.\n\n") and ("- %s" % (cd / _RULE)) in p
+        assert (cd / _RULE).is_file() and str(fake_sota) not in p    # the copy, never the checkout
+        assert prompt_for(A.ARMS["installed"], case, cd) == "Build the thing."   # control unchanged
+        with pytest.raises(SystemExit):                                # no files to name
+            prompt_for(A.ARMS["installed+named"], Case("w01", tmp_path, "x"), cd)
+        with pytest.raises(SystemExit):                                # a file the copy lacks
+            prompt_for(A.ARMS["installed+named"], Case("w01", tmp_path, "x", ("skills/sota/rules/09-no.md",)), cd)
+    finally:
+        A.cleanup(cd)
+
+
+def test_cases_v4_every_case_lists_its_cited_rules_files():
+    cases = load_cases(ROOT / "cases-v4")
+    assert len(cases) == 20 and all(c.rules_files for c in cases)
+    for c in cases:
+        cited = {x["file"] for x in json.loads((ROOT / "cases-v4" / "tasks" / c.id / "rules.json").read_text())}
+        assert set(c.rules_files) == cited
+    assert all(not c.rules_files for c in load_cases(CASES))     # older sets: the field defaults empty
+
+
+def _named_cases(tmp_path, rules_files):
+    d = tmp_path / "cases"
+    shutil.copytree(ROOT / "cases-v4" / "w01", d / "w01")
+    hdr = {"purpose": "t", "selection_rule": "t"}
+    (d / "cases.jsonl").write_text(json.dumps(hdr) + "\n" + json.dumps(
+        {"id": "w01", "prompt": "p", "rules_files": rules_files}) + "\n")
+    return d
+
+
+def test_cmd_run_refuses_a_named_arm_before_any_run(tmp_path, fake_sota, monkeypatch):
+    from agent_evals import cli
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    calls = []
+    monkeypatch.setattr(cli, "run_one", lambda *a: calls.append(a))
+    for files in ([], ["skills/sota-shell-scripting/rules/99-missing.md"]):
+        with pytest.raises(SystemExit):
+            cli.cmd_run(_args(tmp_path, fake_sota, cases=_named_cases(tmp_path / str(len(files)), files),
+                              samples=1, arms="installed,installed+named"))
+    assert calls == []
+
+
+def test_cmd_run_records_which_rules_the_prompt_named(tmp_path, fake_sota, monkeypatch):
+    from agent_evals import cli
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setattr(cli, "run_one", _fake_run_one(0.01))
+    cli.cmd_run(_args(tmp_path, fake_sota, cases=_named_cases(tmp_path, [_RULE]), samples=1,
+                      arms="installed,installed+named"))
+    rows = {r["arm"]: r for r in map(json.loads, (tmp_path / "out" / "runs.jsonl").read_text().splitlines())}
+    assert rows["installed"]["named_rules"] == [] and rows["installed+named"]["named_rules"] == [_RULE]
+
+
+@pytest.mark.parametrize("diffs,want", [([1, 1, 1], 1 / 8), ([2, -1], 0.5), ([], 1.0), ([0, 0], 1.0),
+                                        ([-1, -1], 1.0)])
+def test_sign_flip_one_sided_hand_values(diffs, want):
+    from agent_evals.analyze import sign_flip_one_sided
+    assert sign_flip_one_sided(diffs) == pytest.approx(want)
+
+
+def _v7_rows(t_up, t_down=0, n=20, total=2, c_pass=1, t_ctx=True, c_named=False, t_named=True):
+    """Control passes c_pass of `total` in every case; the treatment passes one more in the first
+    t_up cases and one fewer in the next t_down."""
+    rows = []
+    for arm in ("installed", "installed+named"):
+        for i in range(n):
+            k = c_pass
+            if arm == "installed+named":
+                k += 1 if i < t_up else -1 if i < t_up + t_down else 0
+            named = c_named if arm == "installed" else t_named
+            rows.append({"case": "w%02d" % i, "arm": arm, "sample": 0, "error": None, "router_sha": "aaaa",
+                         "named_rules": [_RULE] if named else [],
+                         "contamination": {"treatment_present": True, "skill_calls": 1},
+                         "hidden": {"ok": k == total, "spec_ok": True, "rules": {"passed": k, "total": total}},
+                         "context": {"transcripts": 1, "rules_lines_seen": 5,
+                                     "rules_in_context": arm == "installed+named" and t_ctx}})
+    return rows
+
+
+@pytest.mark.parametrize("t_up,t_down,want", [
+    (6, 0, "SUPPORTED"),       # +6 of 40 = 0.15, p = 1/64
+    (0, 0, "NULL"),
+    (3, 2, "INCONCLUSIVE"),    # +1 of 40 = 0.025: above the 0.02 null band
+    (2, 0, "INCONCLUSIVE"),    # +0.05, p = 0.25
+    (9, 5, "INCONCLUSIVE"),    # +0.10 but p > 0.05: size alone is not support
+])
+def test_v7_verdicts(t_up, t_down, want):
+    from agent_evals.analyze import analyze_v7
+    got = analyze_v7(_v7_rows(t_up, t_down))
+    assert got["verdict"] == want, got.get("primary")
+
+
+def test_v7_validity_and_manipulation():
+    from agent_evals.analyze import analyze_v7
+    assert analyze_v7(_v7_rows(6, c_named=True))["verdict"] == "INVALID"      # arms not separated
+    assert analyze_v7(_v7_rows(6, t_named=False))["verdict"] == "INVALID"     # treatment absent
+    assert analyze_v7(_v7_rows(6, t_ctx=False))["verdict"] == "MANIPULATION FAILED"
+    rows = _v7_rows(6)
+    rows[0]["hidden"]["rules"] = None                        # an unscored row: excluded and counted
+    got = analyze_v7(rows)
+    assert got["arms"]["control"]["excluded"] == {"rule results unscored": 1}
+    assert got["primary"]["paired_cases"] == 19

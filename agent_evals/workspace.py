@@ -22,6 +22,7 @@ class Case:
     id: str
     dir: Path
     prompt: str
+    rules_files: tuple[str, ...] = ()   # cases-v4: the rules files its RULE tests cite (v7)
 
 
 def load_cases(cases_dir: Path, only: list[str] | None = None) -> list[Case]:
@@ -38,7 +39,7 @@ def load_cases(cases_dir: Path, only: list[str] | None = None) -> list[Case]:
         d = cases_dir / c["id"]
         if not (d / HIDDEN).is_dir():
             raise SystemExit("case %s has no hidden/ tests — it cannot be scored" % c["id"])
-        cases.append(Case(c["id"], d, c["prompt"]))
+        cases.append(Case(c["id"], d, c["prompt"], tuple(c.get("rules_files", ()))))
     if only:
         cases = [c for c in cases if c.id in only]
     if not cases:

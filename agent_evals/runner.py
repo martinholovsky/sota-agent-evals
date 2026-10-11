@@ -45,6 +45,28 @@ class Trace:
     wall_s: float = 0.0
 
 
+NAMED_RULES = ("\n\nBefore you start, read these engineering guideline files. They apply to this "
+               "task:\n%s")
+
+
+def prompt_for(arm: Arm, case: Case, config_dir: Path) -> str:
+    """The case prompt, plus (named_rules arms only) the case's cited rules files by absolute path
+    inside the run's skills/ copy. Fails closed: a treatment run without its file list, or naming a
+    file the copy lacks, would measure `installed` twice."""
+    if not arm.named_rules:
+        return case.prompt
+    if not case.rules_files:
+        raise SystemExit("%s arm: case %s lists no rules_files (cases.jsonl from cases-v4/build.py)"
+                         % (arm.name, case.id))
+    paths = []
+    for rel in case.rules_files:          # "skills/sota-x/rules/NN-y.md"
+        f = config_dir / rel
+        if not f.is_file():
+            raise SystemExit("%s arm: %s is not in the run's skills copy" % (arm.name, rel))
+        paths.append("- %s" % f)
+    return case.prompt + NAMED_RULES % "\n".join(paths)
+
+
 def options_for(arm: Arm, case: Case, cfg: RunConfig, api_key: str):
     """Returns (workspace, config_dir, kwargs for ClaudeAgentOptions) — separated so a dry run
     and the tests can inspect exactly what the agent would get."""
@@ -64,12 +86,13 @@ async def run_one(arm: Arm, case: Case, sample: int, cfg: RunConfig, api_key: st
                                   SystemMessage, TextBlock, ToolResultBlock, ToolUseBlock,
                                   UserMessage, query)
     ws, cd, kwargs = options_for(arm, case, cfg, api_key)
+    prompt = prompt_for(arm, case, cd)   # before the try: its SystemExit must not become a row
     tr = Trace(case.id, arm.name, sample)
     by_id: dict = {}
     t0 = time.monotonic()
 
     async def drive():
-        async for msg in query(prompt=case.prompt, options=ClaudeAgentOptions(**kwargs)):
+        async for msg in query(prompt=prompt, options=ClaudeAgentOptions(**kwargs)):
             if isinstance(msg, SystemMessage) and msg.subtype == "init":
                 tr.init = dict(msg.data)
             elif isinstance(msg, AssistantMessage):

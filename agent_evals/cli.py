@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 
 from .arms import ARMS, cleanup, parse_arms, sota_skill_names
-from .runner import RunConfig, options_for, run_one
+from .runner import RunConfig, options_for, prompt_for, run_one
 from .score import (contamination, depth, hidden_pass, rules_fingerprints, shipped_broken,
                     transcript_depth, tree_changed, unverified_done)
 from .workspace import load_cases
@@ -94,7 +94,7 @@ def cmd_dry_run(a) -> int:
             skills = sorted(p.name for p in (cd / "skills").iterdir())
             print(json.dumps({"case": case.id, "arm": arm.name, "skills_installed": len(skills),
                               "hook": "hooks" in json.loads((cd / "settings.json").read_text()),
-                              "options": shown}, default=str))
+                              "prompt": prompt_for(arm, case, cd), "options": shown}, default=str))
             cleanup(ws, cd)
     return 0
 
@@ -122,6 +122,8 @@ def _row(arm, case, sample, ws, tr, a, sota_skills, tdir=None, fp=None) -> dict:
         "hook_ledger": (ws / ".git" / "sota-verified-done").is_dir(),
         "depth": depth(tr.tool_calls),
         "router_sha": router_sha(a.sota_root),
+        # v7: the rules files this run's PROMPT named (empty for every arm but installed+named)
+        "named_rules": list(case.rules_files) if arm.named_rules else [],
         # v6 primary: rules text in any tool result, read from the CLI's own transcript (kept)
         "context": transcript_depth(tdir, fp) if tdir is not None and fp else None,
     }
@@ -150,6 +152,13 @@ def cmd_run(a, preflight: bool = False) -> int:
     # as the isolation controls.
     arms = [ARMS["bare"], ARMS["library"]] if preflight else parse_arms(a.arms)
     samples = 1 if preflight else a.samples
+    for arm in arms:      # before any spend: a named-rules arm whose case lacks its files cannot run
+        if arm.named_rules:
+            for case in cases:
+                bad = [f for f in case.rules_files if not (a.sota_root / f).is_file()]
+                if not case.rules_files or bad:
+                    raise SystemExit("%s arm: case %s names no rules files, or ones missing from %s: %s"
+                                     % (arm.name, case.id, a.sota_root, bad))
     jobs = [(s, case, arm) for s in range(samples) for case in cases for arm in arms]  # interleaved
     state = {"spent": 0.0, "n": 0, "stopped": False}
     base_usage = openrouter_usage(key) if a.provider == "openrouter" else None

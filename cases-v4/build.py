@@ -180,7 +180,11 @@ def main():
     if only:
         ids = [x for x in ids if x in only]
     else:
-        rows = [HEADER] + [{"id": tid, "prompt": (TASKS / tid / "prompt.md").read_text().strip()}
+        # rules_files: the rules files a task's RULE tests cite. Read only by v7's `installed+named`
+        # arm, which names them in the prompt; every other arm ignores the field.
+        rows = [HEADER] + [{"id": tid, "prompt": (TASKS / tid / "prompt.md").read_text().strip(),
+                            "rules_files": sorted({c["file"] for c in
+                                                   json.loads((TASKS / tid / "rules.json").read_text())})}
                            for tid in ids]
         (HERE / "cases.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
     for tid in ids:

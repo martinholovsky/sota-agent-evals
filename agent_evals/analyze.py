@@ -286,8 +286,119 @@ def rules_summary(rows: list) -> dict:
     return out
 
 
+V7_ARMS = ("installed", "installed+named")
+V7_MIN_DIFF, V7_NULL_MAX, V7_ALPHA = 0.09, 0.02, 0.05
+V7_MANIPULATION_MIN = 0.8   # the treatment exists to put rules text in context; below this it did not
+
+
+def sign_flip_one_sided(diffs: list) -> float:
+    """Exact paired permutation test: P(sum of randomly signed |d| >= observed sum). Cases with
+    d == 0 contribute nothing under any sign, so only the non-zero ones are enumerated."""
+    nz = [abs(d) for d in diffs if d]
+    obs = sum(diffs)
+    if not nz:
+        return 1.0
+    hits = 0
+    for mask in range(1 << len(nz)):
+        tot = sum(v if (mask >> i) & 1 else -v for i, v in enumerate(nz))
+        hits += tot >= obs - 1e-9
+    return hits / (1 << len(nz))
+
+
+def _rules(r: dict):
+    return (r.get("hidden") or {}).get("rules")
+
+
+def analyze_v7(rows: list) -> dict:
+    """v7 (PRE-REGISTRATION-v7.md): does READING the cited rules change the outcome on cases-v4?
+    Primary = pooled RULE tests passed, paired by case; exact one-sided sign-flip test over the
+    per-case differences. Validity first, then the manipulation check, then the verdict."""
+    out = {"arms": {}, "invalid": []}
+    shas = {r.get("router_sha") for r in rows}
+    if len(shas) != 1 or None in shas:
+        out["invalid"].append("file mixes routers or lacks router_sha: %s" % sorted(map(str, shas)))
+    stray = sorted({r["arm"] for r in rows} - set(V7_ARMS))
+    if stray:
+        out["invalid"].append("unexpected arms %s" % stray)
+    if any(r.get("named_rules") for r in rows if r["arm"] == V7_ARMS[0]):
+        out["invalid"].append("a control row's prompt named rules files: the arms are not separated")
+    if any(not r.get("named_rules") for r in rows if r["arm"] == V7_ARMS[1]):
+        out["invalid"].append("a treatment row's prompt named no rules files")
+    per = {}
+    for label, arm in (("control", V7_ARMS[0]), ("treatment", V7_ARMS[1])):
+        mine = [r for r in rows if r["arm"] == arm]
+        excl = defaultdict(int)
+        for r in mine:
+            why = excluded(r) or ("rule results unscored" if not _rules(r) else None)
+            if why:
+                excl[why] += 1
+        valid = [r for r in mine if not excluded(r) and _rules(r)]
+        if any(not ctx(r).get("transcripts") for r in valid):
+            out["invalid"].append("%s has valid rows with no CLI transcript to score" % label)
+        per[label] = valid
+        k = sum(_rules(r)["passed"] for r in valid)
+        n = sum(_rules(r)["total"] for r in valid)
+        costs = [(r.get("result") or {}).get("total_cost_usd") or 0.0 for r in valid]
+        turns = [(r.get("result") or {}).get("num_turns") or 0 for r in valid]
+        out["arms"][label] = {
+            "arm": arm, "rows": len(mine), "excluded": dict(excl),
+            "excluded_share": round(sum(excl.values()) / len(mine), 3) if mine else None,
+            "rule_tests_passed": {"k": k, "n": n, "rate": round(k / n, 3) if n else None},
+            "runs_all_rules_passed": _rate(valid, lambda r: _rules(r)["passed"] == _rules(r)["total"]),
+            "spec_ok": _rate(valid, lambda r: r["hidden"].get("spec_ok") is True),
+            "rules_in_context": _rate(valid, lambda r: bool(ctx(r).get("rules_in_context"))),
+            "skill_call_rate": _rate(valid, lambda r: ((r.get("contamination") or {}).get("skill_calls") or 0) > 0),
+            "mean_rules_lines_seen": round(sum(ctx(r).get("rules_lines_seen", 0) for r in valid) / len(valid), 1) if valid else None,
+            "mean_cost_usd": round(sum(costs) / len(costs), 4) if costs else None,
+            "mean_turns": round(sum(turns) / len(turns), 2) if turns else None,
+        }
+    c, t = out["arms"]["control"], out["arms"]["treatment"]
+    for label, a in (("control", c), ("treatment", t)):
+        if not a["rule_tests_passed"]["n"]:
+            out["invalid"].append("%s has no valid rows" % label)
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    if (t["rules_in_context"]["rate"] or 0) < V7_MANIPULATION_MIN:
+        out["verdict"] = "MANIPULATION FAILED"
+        return out
+    # paired by case: the per-case mean over samples, for cases scored in BOTH arms
+    by = {lab: defaultdict(list) for lab in per}
+    for lab, valid in per.items():
+        for r in valid:
+            by[lab][r["case"]].append(r)
+    paired = sorted(set(by["control"]) & set(by["treatment"]))
+    mean = lambda rs, key: sum(_rules(r)[key] for r in rs) / len(rs)
+    diffs, pk, pn, ck = [], 0.0, 0.0, 0.0
+    out["per_case"] = {}
+    for case in paired:
+        cp, tp = mean(by["control"][case], "passed"), mean(by["treatment"][case], "passed")
+        tot = mean(by["treatment"][case], "total")
+        diffs.append(tp - cp)
+        pk += tp; ck += cp; pn += tot
+        out["per_case"][case] = "%g -> %g of %g" % (cp, tp, tot)
+    diff = (pk - ck) / pn if pn else 0.0
+    p = sign_flip_one_sided(diffs)
+    out["primary"] = {"paired_cases": len(paired), "control_rate": round(ck / pn, 3) if pn else None,
+                      "treatment_rate": round(pk / pn, 3) if pn else None, "diff": round(diff, 3),
+                      "sign_flip_one_sided_p": round(p, 4),
+                      "cases_up": sum(d > 0 for d in diffs), "cases_down": sum(d < 0 for d in diffs)}
+    out["secondary_all_rules_fisher_p"] = round(fisher_one_sided(
+        c["runs_all_rules_passed"]["k"], c["runs_all_rules_passed"]["n"],
+        t["runs_all_rules_passed"]["k"], t["runs_all_rules_passed"]["n"]), 4)
+    out["verdict"] = ("SUPPORTED" if p < V7_ALPHA and diff >= V7_MIN_DIFF
+                      else "NULL" if diff <= V7_NULL_MAX else "INCONCLUSIVE")
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in (c, t))
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--v7" in args:      # analyze --v7 <runs.jsonl>
+        path = [a for a in args if a != "--v7"][0]
+        rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v7(rows), indent=2, default=str))
+        return
     if "--rules" in args:   # analyze --rules <runs.jsonl>   (cases-v4, descriptive)
         path = [a for a in args if a != "--rules"][0]
         rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
