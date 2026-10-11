@@ -462,8 +462,80 @@ def analyze_v8(rows: list, v7_rows: list) -> dict:
     return out
 
 
+V9_ARMS = ("installed+code", "installed+linked")
+
+
+def analyze_v9(rows: list, v7_rows: list, v8_rows: list) -> dict:
+    """v9 (PRE-REGISTRATION-v9.md): ROADMAP 73 (h) and the linking question, one invocation.
+    Primary: v7's `installed` rows -> `installed+code` (the rules file chosen from the code written).
+    Secondary: v7's `installed` rows -> `installed+linked` (the same table as links in sota-python's
+    SKILL.md, with v8's full-read hook). Descriptive: v8's rows -> `installed+linked`, which differ
+    only in the table. Each comparison: the v7 paired rule; manipulation: its marker reached >= 0.5
+    of the treatment's runs (the hook's text, or the table in a tool result)."""
+    out = {"arms": {}, "invalid": [], "secondary": {}, "descriptive": {}}
+    control = [r for r in v7_rows if r["arm"] == "installed"]
+    v8 = [r for r in v8_rows if r["arm"] == "installed+depth"]
+    shas = {r.get("router_sha") for r in rows + control + v8}
+    if len(shas) != 1 or None in shas:
+        out["invalid"].append("files mix routers or lack router_sha: %s" % sorted(map(str, shas)))
+    stray = sorted({r["arm"] for r in rows} - set(V9_ARMS))
+    if stray:
+        out["invalid"].append("unexpected arms %s" % stray)
+    if any(r.get("named_rules") for r in rows + control + v8):
+        out["invalid"].append("a row's prompt named rules files")
+    leaks = {"installed+code": ("hint_router", "hint_skill", "linked_table"),
+             "installed+linked": ("hint_code",)}
+    for r in rows:
+        if any(ctx(r).get(k, 0) for k in leaks.get(r["arm"], ())):
+            out["invalid"].append("a %s row received another arm's treatment" % r["arm"])
+            break
+    if any(ctx(r).get(k, 0) for r in control for k in ("hint_router", "hint_skill", "hint_code", "linked_table")):
+        out["invalid"].append("a control row received a treatment")
+    groups = {"control (v7 installed)": control, "v8 (full-read hook)": v8,
+              "installed+code": [r for r in rows if r["arm"] == "installed+code"],
+              "installed+linked": [r for r in rows if r["arm"] == "installed+linked"]}
+    valid = {}
+    for label, mine in groups.items():
+        valid[label], out["arms"][label] = _arm_stats(mine)
+        out["arms"][label]["code_hint_rate"] = _rate(valid[label], lambda r: ctx(r).get("hint_code", 0) > 0)
+        out["arms"][label]["linked_table_rate"] = _rate(valid[label], lambda r: ctx(r).get("linked_table", 0) > 0)
+        if any(not ctx(r).get("transcripts") for r in valid[label]):
+            out["invalid"].append("%s has valid rows with no CLI transcript to score" % label)
+        if not out["arms"][label]["rule_tests_passed"]["n"]:
+            out["invalid"].append("%s has no valid rows" % label)
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    c = "control (v7 installed)"
+    plan = (("primary", c, "installed+code", "code_hint_rate"),
+            ("secondary: linked index", c, "installed+linked", "linked_table_rate"),
+            ("descriptive: v8 -> linked (the table alone)", "v8 (full-read hook)", "installed+linked", "linked_table_rate"))
+    for name, lo, hi, manip in plan:
+        res = {"control": lo, "treatment": hi, "manipulation": manip,
+               "manipulation_rate": out["arms"][hi][manip]["rate"]}
+        if (res["manipulation_rate"] or 0) < MANIPULATION_MIN:
+            res["verdict"] = "MANIPULATION FAILED"
+        else:
+            res.update(_paired(valid[lo], valid[hi]))
+        if name == "primary":
+            out["primary"] = res
+            out["verdict"] = res["verdict"]
+        elif name.startswith("secondary"):
+            out["secondary"][name] = res
+        else:
+            res.pop("verdict", None)      # descriptive: no verdict attached
+            out["descriptive"][name] = res
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in out["arms"].values())
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--v9" in args:      # analyze --v9 <v9 runs.jsonl> <v7 runs.jsonl> <v8 runs.jsonl>
+        p9, p7, p8 = [a for a in args if a != "--v9"]
+        load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v9(load(p9), load(p7), load(p8)), indent=2, default=str))
+        return
     if "--v8" in args:      # analyze --v8 <v8 runs.jsonl> <v7 runs.jsonl>
         p8, p7 = [a for a in args if a != "--v8"]
         load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]

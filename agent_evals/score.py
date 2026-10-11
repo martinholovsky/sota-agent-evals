@@ -189,7 +189,9 @@ def depth(tool_calls: list) -> dict:
 # The source is Claude Code's own session transcript, kept per run, never the runner's truncated copy.
 FP_MIN = 50
 HOOK_MARKERS = {"hint_router": "router is a map and applies no rule by itself",
-                "hint_skill": "loaded its index (SKILL.md) only"}
+                "hint_skill": "loaded its index (SKILL.md) only",
+                "hint_code": "SOTA: the code you just wrote in",                 # v9 code-rules hook
+                "linked_table": "What your code does: the rules outside this skill"}  # v9 linked index
 _PREFIXES = (re.compile(r"^\s*\d+\t"), re.compile(r"^(?:[^\s:]+:)?\d+[:-]"))
 
 

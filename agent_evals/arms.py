@@ -41,6 +41,8 @@ class Arm:
                            # directive and listing-budget fraction, read from --sota-root's install.sh
     depth_hook: bool = False  # scripts/skill-depth-hook.py as a PostToolUse hook on Skill (v6)
     named_rules: bool = False  # the prompt names the case's cited rules files (v7; runner.prompt_for)
+    code_hook: bool = False    # scripts/code-rules-hook.py as a PostToolUse hook on Edit|Write|MultiEdit (v9)
+    linked_table: bool = False  # that script's --table appended to the run's sota-python/SKILL.md (v9)
 
 
 ARMS = {
@@ -58,7 +60,17 @@ ARMS = {
     # skills/ copy) of the rules files the case's RULE tests cite. Not a product design: it puts the
     # rules in front of the model so v7 can ask whether READING them changes the outcome.
     "installed+named": Arm("installed+named", library=True, hook=False, routing=True, named_rules=True),
+    # v9 (2026-10-12): ROADMAP 73 (h). The rules file is chosen from the CODE the agent writes: a
+    # PostToolUse hook on Edit|Write|MultiEdit matches the written text against a trigger table and
+    # names the rules file and section to read in full.
+    "installed+code": Arm("installed+code", library=True, hook=False, routing=True, code_hook=True),
+    # v9: the same trigger table as a static link table in the first-depth index (sota-python's
+    # SKILL.md), with v8's full-read depth hook. Asks whether a link in the index steers the choice.
+    "installed+linked": Arm("installed+linked", library=True, hook=False, routing=True, depth_hook=True,
+                            linked_table=True),
 }
+
+LINKED_SKILL = "sota-python"
 
 
 def routing_layer(sota_root: Path, skills_dir: Path | None = None) -> tuple[str, str, float]:
@@ -112,6 +124,14 @@ def settings_for(arm: Arm, sota_root: Path) -> dict:
             raise SystemExit("installed+depth arm: %s has no scripts/skill-depth-hook.py — wrong --sota-root" % sota_root)
         s.setdefault("hooks", {}).setdefault("PostToolUse", []).append(
             {"matcher": "Skill", "hooks": [{"type": "command", "command": "python3 %s" % json.dumps(str(script))}]})
+    if arm.code_hook or arm.linked_table:   # fails closed, as the depth hook does
+        script = sota_root / "scripts" / "code-rules-hook.py"
+        if not script.is_file():
+            raise SystemExit("%s arm: %s has no scripts/code-rules-hook.py — wrong --sota-root" % (arm.name, sota_root))
+    if arm.code_hook:
+        s.setdefault("hooks", {}).setdefault("PostToolUse", []).append(
+            {"matcher": "Edit|Write|MultiEdit",
+             "hooks": [{"type": "command", "command": "python3 %s" % json.dumps(str(sota_root / "scripts" / "code-rules-hook.py"))}]})
     if arm.routing:
         hook_cmd, _block, frac = routing_layer(sota_root)
         s.setdefault("hooks", {})["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": hook_cmd}]}]
@@ -133,6 +153,14 @@ def build_config_dir(arm: Arm, sota_root: Path) -> Path:
         for sk in sorted(src.iterdir()):
             if (sk / "SKILL.md").is_file():
                 shutil.copytree(sk, skills / sk.name)   # a copy: the run cannot edit the library
+    if arm.linked_table:   # the run's COPY only; the checkout's skills/ is never edited
+        import subprocess
+        p = subprocess.run(["python3", str(sota_root / "scripts" / "code-rules-hook.py"), "--table"],
+                           capture_output=True, text=True)
+        target = skills / LINKED_SKILL / "SKILL.md"
+        if p.returncode != 0 or "](../" not in p.stdout or not target.is_file():
+            raise SystemExit("installed+linked arm: no table from %s (rc=%d) or no %s" % (sota_root, p.returncode, target))
+        target.write_text(target.read_text(encoding="utf-8").rstrip("\n") + "\n\n" + p.stdout, encoding="utf-8")
     if arm.routing:   # after the copy: the block names the router file inside THIS run's skills/
         (d / "CLAUDE.md").write_text(routing_layer(sota_root, skills)[1])   # the global directive
     return d

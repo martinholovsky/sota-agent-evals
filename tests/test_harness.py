@@ -91,9 +91,11 @@ def test_workspace_never_contains_hidden_tests_or_references():
 
 
 @pytest.mark.parametrize("arm", list(A.ARMS.values()), ids=lambda a: a.name)
-def test_arm_config_is_isolated_and_symmetric(arm, fake_sota):
+def test_arm_config_is_isolated_and_symmetric(arm, fake_sota, tmp_path):
     case = load_cases(CASES)[0]
-    ws, cd, kw = options_for(arm, case, RunConfig(model="m", sota_root=fake_sota), "k")
+    v9 = arm.code_hook or arm.linked_table              # these need the hook script and sota-python
+    root = _v9_root(fake_sota, tmp_path) if v9 else fake_sota
+    ws, cd, kw = options_for(arm, case, RunConfig(model="m", sota_root=root), "k")
     try:
         assert kw["setting_sources"] == ["user"]
         assert kw["env"]["CLAUDE_CONFIG_DIR"] == str(cd)
@@ -105,7 +107,8 @@ def test_arm_config_is_isolated_and_symmetric(arm, fake_sota):
         assert kw["sandbox"]["allowUnsandboxedCommands"] is False
         assert kw["permission_mode"] == "dontAsk"
         skills = {p.name for p in (cd / "skills").iterdir()}
-        assert skills == ({"sota", "sota-shell-scripting"} if arm.library else set())
+        assert skills == ({"sota", "sota-shell-scripting"} | ({"sota-python"} if v9 else set())
+                          if arm.library else set())
         settings = json.loads((cd / "settings.json").read_text())
         assert ("hooks" in settings) == (arm.hook or arm.routing)
         if arm.hook:
@@ -837,3 +840,90 @@ def test_v8_paired_against_v7_control_and_validity():
     assert analyze_v8(v8, leak)["verdict"] == "INVALID"                                    # control got the hook
     nohint = [r for r in _v7_four(depth_up=6, hint=False) if r["arm"] == "installed+depth"]
     assert analyze_v8(nohint, v7)["verdict"] == "MANIPULATION FAILED"
+
+
+# ---- v9: ROADMAP 73 (h) code-rules hook and the linked index ------------------------------
+
+def _v9_root(fake_sota, tmp_path, table="## What your code does: the rules outside this skill\n| a | [x](../sota-x/rules/01-x.md) | y |\n"):
+    r = tmp_path / "v9lib"
+    shutil.copytree(fake_sota, r)
+    (r / "skills" / "sota-python").mkdir()
+    (r / "skills" / "sota-python" / "SKILL.md").write_text("---\nname: sota-python\ndescription: x\n---\n# idx\n")
+    (r / "scripts" / "code-rules-hook.py").write_text(
+        "import sys\nif sys.argv[1:] == ['--table']:\n    sys.stdout.write(%r)\n" % table)
+    return r
+
+
+def test_code_arm_registers_the_hook_on_writes_and_fails_closed(fake_sota, tmp_path):
+    r = _v9_root(fake_sota, tmp_path)
+    s = A.settings_for(A.ARMS["installed+code"], r)
+    assert s["hooks"]["PostToolUse"] == [{"matcher": "Edit|Write|MultiEdit", "hooks": [{"type": "command",
+                                          "command": "python3 %s" % json.dumps(str(r / "scripts" / "code-rules-hook.py"))}]}]
+    assert "UserPromptSubmit" in s["hooks"]                       # still the full routing layer
+    linked = A.settings_for(A.ARMS["installed+linked"], r)["hooks"]["PostToolUse"]
+    assert [h["matcher"] for h in linked] == ["Skill"]             # v8's hook, not the code hook
+    (r / "scripts" / "code-rules-hook.py").unlink()
+    for arm in ("installed+code", "installed+linked"):
+        with pytest.raises(SystemExit):
+            A.settings_for(A.ARMS[arm], r)
+
+
+def test_linked_arm_appends_the_table_to_the_run_copy_only(fake_sota, tmp_path):
+    r = _v9_root(fake_sota, tmp_path)
+    before = (r / "skills" / "sota-python" / "SKILL.md").read_text()
+    d = A.build_config_dir(A.ARMS["installed+linked"], r)
+    got = (d / "skills" / "sota-python" / "SKILL.md").read_text()
+    assert got.startswith(before.rstrip("\n")) and "What your code does: the rules outside this skill" in got
+    assert (r / "skills" / "sota-python" / "SKILL.md").read_text() == before    # checkout untouched
+    plain = A.build_config_dir(A.ARMS["installed+code"], r)
+    assert "What your code does" not in (plain / "skills" / "sota-python" / "SKILL.md").read_text()
+    empty = _v9_root(fake_sota, tmp_path / "e", table="")
+    with pytest.raises(SystemExit):                               # no table: fail closed
+        A.build_config_dir(A.ARMS["installed+linked"], empty)
+
+
+def test_transcript_depth_counts_the_v9_markers(tmp_path):
+    from agent_evals.score import transcript_depth
+    _transcript(tmp_path / "t", ["## What your code does: the rules outside this skill\n| x |"],
+                extra=json.dumps({"attachment": "SOTA: the code you just wrote in /w/a.py:"}) + "\n")
+    got = transcript_depth(tmp_path / "t", set())
+    assert got["hint_code"] == 1 and got["linked_table"] == 1 and got["hint_skill"] == 0
+
+
+def _v9_rows(code_up=0, linked_up=0, code_hint=True, table=True):
+    four = _v7_four()
+    v7 = [r for r in four if r["arm"] != "installed+depth"]
+    v8 = [r for r in four if r["arm"] == "installed+depth"]
+    base = [r for r in four if r["arm"] == "installed"]
+    rows = []
+    for arm, up, marks in (("installed+code", code_up, {"hint_code": int(code_hint)}),
+                           ("installed+linked", linked_up, {"hint_skill": 1, "linked_table": int(table)})):
+        for i, r in enumerate(base):
+            k = r["hidden"]["rules"]["passed"] + (1 if i < up else 0)
+            rows.append(dict(r, arm=arm, named_rules=[], hidden={"ok": k == 2, "spec_ok": True,
+                             "rules": {"passed": k, "total": 2}},
+                             context=dict(r["context"], **dict({"hint_router": 0, "hint_skill": 0}, **marks))))
+    return rows, v7, v8
+
+
+def test_v9_primary_secondary_and_validity():
+    from agent_evals.analyze import analyze_v9
+    rows, v7, v8 = _v9_rows(code_up=6, linked_up=0)
+    got = analyze_v9(rows, v7, v8)
+    assert got["verdict"] == "SUPPORTED" and got["primary"]["paired_cases"] == 20
+    assert got["secondary"]["secondary: linked index"]["verdict"] == "NULL"
+    assert "verdict" not in got["descriptive"]["descriptive: v8 -> linked (the table alone)"]
+    rows2, _, _ = _v9_rows(code_up=0, linked_up=6)
+    got2 = analyze_v9(rows2, v7, v8)
+    assert got2["verdict"] == "NULL" and got2["secondary"]["secondary: linked index"]["verdict"] == "SUPPORTED"
+    assert analyze_v9(_v9_rows(code_up=6, code_hint=False)[0], v7, v8)["verdict"] == "MANIPULATION FAILED"
+    nt = analyze_v9(_v9_rows(linked_up=6, table=False)[0], v7, v8)
+    assert nt["secondary"]["secondary: linked index"]["verdict"] == "MANIPULATION FAILED"
+    leak = [dict(r, context=dict(r["context"], hint_code=1)) if r["arm"] == "installed+linked" else r for r in rows]
+    assert analyze_v9(leak, v7, v8)["verdict"] == "INVALID"                      # linked got the code hook
+    leak2 = [dict(r, context=dict(r["context"], hint_skill=1)) if r["arm"] == "installed+code" else r for r in rows]
+    assert analyze_v9(leak2, v7, v8)["verdict"] == "INVALID"                     # code got the depth hook
+    ctl = [dict(r, context=dict(r["context"], hint_code=1)) if r["arm"] == "installed" else r for r in v7]
+    assert analyze_v9(rows, ctl, v8)["verdict"] == "INVALID"                     # control got a treatment
+    assert analyze_v9(rows + [dict(rows[0], arm="installed")], v7, v8)["verdict"] == "INVALID"
+    assert analyze_v9([dict(r, router_sha="bbbb") for r in rows], v7, v8)["verdict"] == "INVALID"
