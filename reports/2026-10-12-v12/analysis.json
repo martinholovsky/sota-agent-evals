@@ -1,0 +1,167 @@
+{
+  "arms": {
+    "v7 installed": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 37,
+        "n": 53,
+        "rate": 0.698
+      },
+      "runs_all_rules_passed": {
+        "k": 12,
+        "n": 20,
+        "rate": 0.6
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 5,
+        "n": 20,
+        "rate": 0.25
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 26.8,
+      "mean_cost_usd": 0.3662,
+      "mean_turns": 19.35,
+      "links_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "cited_reached": {
+        "k": 5,
+        "n": 20,
+        "rate": 0.25
+      },
+      "past_router": {
+        "k": 8,
+        "n": 20,
+        "rate": 0.4
+      },
+      "rules_read_errors": 2
+    },
+    "installed+links": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 36,
+        "n": 53,
+        "rate": 0.679
+      },
+      "runs_all_rules_passed": {
+        "k": 11,
+        "n": 20,
+        "rate": 0.55
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 10,
+        "n": 20,
+        "rate": 0.5
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 136.8,
+      "mean_cost_usd": 0.3925,
+      "mean_turns": 20.45,
+      "links_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "cited_reached": {
+        "k": 6,
+        "n": 20,
+        "rate": 0.3
+      },
+      "past_router": {
+        "k": 11,
+        "n": 20,
+        "rate": 0.55
+      },
+      "rules_read_errors": 0
+    }
+  },
+  "invalid": [],
+  "secondary": {
+    "rule tests": {
+      "paired_cases": 20,
+      "control_rate": 0.698,
+      "treatment_rate": 0.679,
+      "diff": -0.019,
+      "sign_flip_one_sided_p": 1.0,
+      "cases_up": 0,
+      "cases_down": 1,
+      "per_case": {
+        "w01": "3 -> 3 of 3",
+        "w02": "0 -> 0 of 2",
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 1 of 2",
+        "w05": "4 -> 4 of 4",
+        "w06": "0 -> 0 of 3",
+        "w07": "0 -> 0 of 2",
+        "w08": "3 -> 2 of 3",
+        "w09": "3 -> 3 of 3",
+        "w10": "2 -> 2 of 2",
+        "w11": "2 -> 2 of 2",
+        "w12": "3 -> 3 of 3",
+        "w13": "3 -> 3 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "2 -> 2 of 2",
+        "w17": "3 -> 3 of 3",
+        "w18": "0 -> 0 of 2",
+        "w19": "3 -> 3 of 4",
+        "w20": "1 -> 1 of 4"
+      },
+      "verdict": "NULL"
+    }
+  },
+  "primary": {
+    "paired_cases": 20,
+    "control_rate": 0.25,
+    "treatment_rate": 0.3,
+    "diff": 0.05,
+    "sign_test_one_sided_p": 0.5,
+    "cases_up": [
+      "w05",
+      "w06",
+      "w15"
+    ],
+    "cases_down": [
+      "w01",
+      "w09"
+    ],
+    "verdict": "NULL",
+    "outcome": "cited_reached"
+  },
+  "verdict": "NULL",
+  "compromised": false
+}
