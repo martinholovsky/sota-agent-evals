@@ -80,6 +80,12 @@ ARMS = {
     # names"). Identical install; cli refuses the arm on a root without the links, and the plain
     # arms on a root with them.
     "installed+links": Arm("installed+links", library=True, hook=False, routing=True),
+    # v13 (2026-10-12): SOTA-skills ROADMAP 73 (o). `installed`, from a --sota-root whose router
+    # carries the code-rules hook's trigger table as a section ("What your code does: the rules file
+    # to read"): each rules file linked next to the words of a task, under the v10 paragraph. No hook
+    # of any kind, so it stands for every host but Claude Code. cli refuses it on a root without the
+    # table, and the other installed arms on a root with it.
+    "installed+table": Arm("installed+table", library=True, hook=False, routing=True),
 }
 
 LINKED_SKILL = "sota-python"

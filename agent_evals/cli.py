@@ -100,6 +100,7 @@ def cmd_dry_run(a) -> int:
 
 
 LINK_ROUTER_MARK = "[`sota-architecture`](../sota-architecture/SKILL.md)"   # = score.HOOK_MARKERS["links_router"]
+TABLE_ROUTER_MARK = "## What your code does: the rules file to read"        # = score.HOOK_MARKERS["table_router"]
 
 
 def router_sha(sota_root: Path) -> str:
@@ -163,11 +164,18 @@ def cmd_run(a, preflight: bool = False) -> int:
                 if not case.rules_files or bad:
                     raise SystemExit("%s arm: case %s names no rules files, or ones missing from %s: %s"
                                      % (arm.name, case.id, a.sota_root, bad))
-    links_root = LINK_ROUTER_MARK in (a.sota_root / "skills" / "sota" / "SKILL.md").read_text(encoding="utf-8")
+    router_text = (a.sota_root / "skills" / "sota" / "SKILL.md").read_text(encoding="utf-8")
+    links_root = LINK_ROUTER_MARK in router_text
+    table_root = TABLE_ROUTER_MARK in router_text
+    for arm in arms:      # v13: likewise for the router's trigger table
+        if arm.name == "installed+table" and not table_root:
+            raise SystemExit("installed+table arm: %s's router has no trigger table — wrong --sota-root" % a.sota_root)
+        if arm.name in ("installed", "installed+links", "bare", "library") and table_root and not preflight:
+            raise SystemExit("%s arm: %s is the table root — run that arm from its own root" % (arm.name, a.sota_root))
     for arm in arms:      # v12: the arm name must match the root, or two runs measure one library
         if arm.name == "installed+links" and not links_root:
             raise SystemExit("installed+links arm: %s's router has no relative links — wrong --sota-root" % a.sota_root)
-        if arm.name in ("installed", "bare", "library") and links_root and not preflight:
+        if arm.name in ("installed", "bare", "library") and links_root and not table_root and not preflight:
             raise SystemExit("%s arm: %s is the links root — run the control from the plain root" % (arm.name, a.sota_root))
     jobs = [(s, case, arm) for s in range(samples) for case in cases for arm in arms]  # interleaved
     state = {"spent": 0.0, "n": 0, "stopped": False}

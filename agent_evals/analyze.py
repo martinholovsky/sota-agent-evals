@@ -655,7 +655,8 @@ def annotate_reach(rows: list, results_dir, cases_path) -> list:
         if tdir.is_dir() and any(tdir.rglob("*.jsonl")):
             raw = "".join(f.read_text(encoding="utf-8", errors="replace") for f in tdir.rglob("*.jsonl"))
             r["context"] = dict(r.get("context") or {}, **cited_reach(tdir, cases[r["case"]]),
-                                links_router=raw.count(HOOK_MARKERS["links_router"]))
+                                links_router=raw.count(HOOK_MARKERS["links_router"]),
+                                table_router=raw.count(HOOK_MARKERS["table_router"]))
         out.append(r)
     return out
 
@@ -732,6 +733,61 @@ def analyze_v12(rows: list, v7_rows: list) -> dict:
     return out
 
 
+def analyze_v13(rows: list, v12_rows: list) -> dict:
+    """v13 (PRE-REGISTRATION-v13.md): SOTA-skills ROADMAP 73 (o), the router's trigger table. Primary:
+    v12's `installed+links` rows (re-annotated by annotate_reach) -> `installed+table`, on whether the
+    run reached a cited rules file, with v12's thresholds. Secondary: rule tests, v7's paired rule.
+    Manipulation: the table reached >= 0.5 of the treatment's runs and none of the control's. The
+    table carries v10's paragraph, so `hint_apply` is EXPECTED in the treatment and is not a hook;
+    every other hook or table marker invalidates a row."""
+    out = {"arms": {}, "invalid": [], "secondary": {}}
+    control = [r for r in v12_rows if r["arm"] == "installed+links"]
+    stray = sorted({r["arm"] for r in rows} - {"installed+table"})
+    if stray:
+        out["invalid"].append("unexpected arms %s" % stray)
+    t_sha = {r.get("router_sha") for r in rows}
+    c_sha = {r.get("router_sha") for r in control}
+    if len(t_sha) != 1 or len(c_sha) != 1 or None in t_sha | c_sha or t_sha == c_sha:
+        out["invalid"].append("each arm needs one router, and they must differ: %s vs %s"
+                              % (sorted(map(str, c_sha)), sorted(map(str, t_sha))))
+    if any(r.get("named_rules") for r in rows + control):
+        out["invalid"].append("a row's prompt named rules files")
+    hints = ("hint_router", "hint_skill", "hint_code", "linked_table", "hint_label")
+    if any(ctx(r).get(k, 0) for r in rows + control for k in hints):
+        out["invalid"].append("a row received a hook or index-table treatment")
+    if any(ctx(r).get("hint_apply", 0) for r in control):
+        out["invalid"].append("a control row saw the part-of-the-task paragraph")
+    if any("cited_reached" not in ctx(r) or "table_router" not in ctx(r) for r in rows + control):
+        out["invalid"].append("a row lacks the v13 fields (control not re-annotated, or no transcript)")
+    if any(ctx(r).get("table_router", 0) for r in control):
+        out["invalid"].append("a control row saw the table router: wrong file")
+    valid = {}
+    for label, mine in (("v12 installed+links", control), ("installed+table", rows)):
+        valid[label], out["arms"][label] = _arm_stats(mine)
+        v = valid[label]
+        out["arms"][label].update({
+            "table_rate": _rate(v, lambda r: ctx(r).get("table_router", 0) > 0),
+            "cited_reached": _rate(v, lambda r: bool(ctx(r).get("cited_reached"))),
+            "past_router": _rate(v, lambda r: bool((r.get("depth") or {}).get("past_router"))),
+            "rules_read_errors": sum(ctx(r).get("rules_read_errors", 0) for r in v)})
+        if not out["arms"][label]["rule_tests_passed"]["n"]:
+            out["invalid"].append("%s has no valid rows" % label)
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    rate = out["arms"]["installed+table"]["table_rate"]["rate"] or 0
+    if rate < MANIPULATION_MIN:
+        out["primary"] = {"verdict": "MANIPULATION FAILED", "table_rate": rate}
+        out["verdict"] = "MANIPULATION FAILED"
+        return out
+    out["primary"] = dict(_paired_reach(valid["v12 installed+links"], valid["installed+table"]),
+                          outcome="cited_reached")
+    out["verdict"] = out["primary"]["verdict"]
+    out["secondary"]["rule tests"] = _paired(valid["v12 installed+links"], valid["installed+table"])
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in out["arms"].values())
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
     if "--annotate-reach" in args:   # analyze --annotate-reach <runs.jsonl> <results-dir> <cases.jsonl>
@@ -739,6 +795,11 @@ def main(argv=None):
         rows = [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
         for r in annotate_reach(rows, rd, cp):
             print(json.dumps(r, default=str))
+        return
+    if "--v13" in args:     # analyze --v13 <v13 runs.jsonl> <v12 runs re-annotated by --annotate-reach>
+        p13, p12 = [a for a in args if a != "--v13"]
+        load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v13(load(p13), load(p12)), indent=2, default=str))
         return
     if "--v12" in args:     # analyze --v12 <v12 runs.jsonl> <v7 runs annotated by --annotate-reach>
         p12, p7 = [a for a in args if a != "--v12"]

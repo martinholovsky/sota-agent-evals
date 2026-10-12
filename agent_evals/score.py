@@ -195,7 +195,9 @@ HOOK_MARKERS = {"hint_router": "router is a map and applies no rule by itself",
                 "hint_apply": "they are part of what was asked",                  # v10 (j) hook wording
                 "hint_label": "MANDATORY: apply the rules in each file named above",  # v11 label only
                 # v12: the router's routing-table row as a relative link -- only the links root has it
-                "links_router": "[`sota-architecture`](../sota-architecture/SKILL.md)"}
+                "links_router": "[`sota-architecture`](../sota-architecture/SKILL.md)",
+                # v13: the router's generated trigger table -- only the table root has it
+                "table_router": "## What your code does: the rules file to read"}
 _PREFIXES = (re.compile(r"^\s*\d+\t"), re.compile(r"^(?:[^\s:]+:)?\d+[:-]"))
 
 

@@ -1040,6 +1040,55 @@ def test_v12_reach_verdicts_and_validity():
     assert analyze_v12(t + [dict(t[0], arm="installed")], c)["verdict"] == "INVALID"
 
 
+def _v13_rows(reach_up=0, reach_down=0, table=True):
+    def row(case, arm, sha, reached, tb, apply_):
+        return {"case": case, "arm": arm, "sample": 0, "error": None, "router_sha": sha, "named_rules": [],
+                "result": {"total_cost_usd": 0.4, "num_turns": 20}, "depth": {"past_router": reached},
+                "hidden": {"ok": True, "spec_ok": True, "rules": {"passed": 1, "total": 2}},
+                "context": {"transcripts": 1, "cited_reached": reached, "links_router": 1,
+                            "table_router": tb, "hint_apply": apply_, "rules_read_errors": 0}}
+    cases = ["w%02d" % i for i in range(1, 21)]
+    control = [row(c, "installed+links", "cccc", i < 6, 0, 0) for i, c in enumerate(cases)]
+    treat = [row(c, "installed+table", "dddd",
+                 (i < 6 and i >= reach_down) or (6 <= i < 6 + reach_up), int(table), int(table))
+             for i, c in enumerate(cases)]
+    return treat, control
+
+
+def test_v13_reach_verdicts_and_validity():
+    from agent_evals.analyze import analyze_v13
+    t, c = _v13_rows(reach_up=6)
+    got = analyze_v13(t, c)
+    assert got["verdict"] == "SUPPORTED" and got["primary"]["diff"] == 0.3, got   # apply marker is allowed
+    assert analyze_v13(*_v13_rows(reach_up=1))["verdict"] == "NULL"
+    assert analyze_v13(*_v13_rows(reach_up=4, reach_down=1))["verdict"] == "INCONCLUSIVE"
+    assert analyze_v13(*_v13_rows(reach_up=6, table=False))["verdict"] == "MANIPULATION FAILED"
+    assert analyze_v13([dict(r, router_sha="cccc") for r in t], c)["verdict"] == "INVALID"   # same router
+    for k in ("table_router", "hint_apply"):                                                  # control leaks
+        assert analyze_v13(t, [dict(r, context=dict(r["context"], **{k: 1})) for r in c])["verdict"] == "INVALID"
+    assert analyze_v13(t, [dict(r, context={"transcripts": 1, "cited_reached": False}) for r in c])["verdict"] == "INVALID"
+    assert analyze_v13([dict(r, context=dict(r["context"], hint_code=1)) for r in t], c)["verdict"] == "INVALID"
+    assert analyze_v13(t + [dict(t[0], arm="installed+links")], c)["verdict"] == "INVALID"
+
+
+def test_v13_cli_refuses_arm_root_mismatch(tmp_path, monkeypatch):
+    import argparse, pytest
+    from agent_evals import cli
+    def root(table):
+        r = tmp_path / ("t" if table else "p"); (r / "skills" / "sota").mkdir(parents=True, exist_ok=True)
+        (r / "skills" / "sota" / "SKILL.md").write_text(
+            "x\n" + (cli.TABLE_ROUTER_MARK + "\n" if table else "") + cli.LINK_ROUTER_MARK + "\n")
+        return r
+    for arm, table in (("installed+table", False), ("installed+links", True), ("installed", True)):
+        a = argparse.Namespace(provider="openrouter", model="m", sota_root=root(table), max_turns=1,
+                               max_budget_usd=1, timeout=1, out=str(tmp_path / "o"), cases=Path(__file__).resolve().parent.parent / "cases-v4",
+                               only=None, arms=arm, samples=1)
+        monkeypatch.setenv("OPENROUTER_API_KEY", "dummy-not-a-key")   # read (and popped) first
+        with pytest.raises(SystemExit) as e:
+            cli.cmd_run(a)
+        assert "root" in str(e.value), (arm, table, e.value)
+
+
 def test_cited_reach_reads_tool_inputs_and_errors(tmp_path):
     from agent_evals.score import cited_reach
     d = tmp_path / "t"; d.mkdir()
