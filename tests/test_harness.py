@@ -973,3 +973,34 @@ def test_v10_primary_secondary_and_validity():
     assert analyze_v10(rows, v9, ctl)["verdict"] == "INVALID"                   # control got a treatment
     assert analyze_v10(rows + [dict(rows[0], arm="installed+code")], v9, v7)["verdict"] == "INVALID"
     assert analyze_v10([dict(r, router_sha="bbbb") for r in rows], v9, v7)["verdict"] == "INVALID"
+
+
+# ---- v11: the bare MANDATORY label ------------------------------------------------------------
+
+def _v11_rows(label_up=0, apply_up=0, label_hint=True):
+    v10, v9, _ = _v10_rows(apply_up=apply_up)
+    rows = [dict(r, arm="installed+label", hidden=dict(r["hidden"]),
+                 context=dict(r["context"], hint_apply=0, hint_label=int(label_hint))) for r in v10]
+    base = [r for r in v9]
+    for i, r in enumerate(rows):
+        k = base[i]["hidden"]["rules"]["passed"] + (1 if i < label_up else 0)
+        r["hidden"] = {"ok": k == 2, "spec_ok": True, "rules": {"passed": k, "total": 2}}
+    return rows, v10, v9
+
+
+def test_v11_primary_secondary_and_validity():
+    from agent_evals.analyze import analyze_v11
+    rows, v10, v9 = _v11_rows(label_up=6, apply_up=6)
+    got = analyze_v11(rows, v10, v9)
+    assert got["verdict"] == "SUPPORTED" and got["primary"]["control"] == "v9 code hook"
+    assert got["secondary"]["secondary: label -> v10 wording"]["verdict"] == "NULL"
+    r2, v10b, _ = _v11_rows(label_up=0, apply_up=6)            # label adds nothing; v10 beats it
+    got2 = analyze_v11(r2, v10b, v9)
+    assert got2["verdict"] == "NULL" and got2["secondary"]["secondary: label -> v10 wording"]["verdict"] == "SUPPORTED"
+    assert analyze_v11(_v11_rows(label_up=6, label_hint=False)[0], v10, v9)["verdict"] == "MANIPULATION FAILED"
+    leak = [dict(r, context=dict(r["context"], hint_apply=1)) for r in rows]
+    assert analyze_v11(leak, v10, v9)["verdict"] == "INVALID"                    # label got v10's wording
+    old = [dict(r, context=dict(r["context"], hint_label=1)) for r in v10]
+    assert analyze_v11(rows, old, v9)["verdict"] == "INVALID"                    # v10 file carries the label
+    assert analyze_v11(rows + [dict(rows[0], arm="installed+apply")], v10, v9)["verdict"] == "INVALID"
+    assert analyze_v11([dict(r, router_sha="bbbb") for r in rows], v10, v9)["verdict"] == "INVALID"

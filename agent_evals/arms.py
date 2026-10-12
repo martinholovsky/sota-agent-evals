@@ -72,6 +72,9 @@ ARMS = {
     # text adds that the named rules are part of the task (build with a conservative default, do not
     # hand back). Installed exactly as `installed+code`; the arm name separates the rows.
     "installed+apply": Arm("installed+apply", library=True, hook=False, routing=True, code_hook=True),
+    # v11 (2026-10-12): the same hook from a root whose added line is only a bare "MANDATORY:" label,
+    # to separate the label from v10's wording (the rules are part of the task, no hand-back).
+    "installed+label": Arm("installed+label", library=True, hook=False, routing=True, code_hook=True),
 }
 
 LINKED_SKILL = "sota-python"

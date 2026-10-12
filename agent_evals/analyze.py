@@ -581,8 +581,64 @@ def analyze_v10(rows: list, v9_rows: list, v7_rows: list) -> dict:
     return out
 
 
+def analyze_v11(rows: list, v10_rows: list, v9_rows: list) -> dict:
+    """v11 (PRE-REGISTRATION-v11.md): the code-rules hook with a bare MANDATORY label. Primary: v9's
+    `installed+code` rows -> `installed+label` (does the label alone help?). Secondary: `installed+label`
+    -> v10's `installed+apply` (does v10's wording beat the label?). Both: the v7 paired rule;
+    manipulation: the label reached >= 0.5 of the label arm's runs (and v10's wording, of v10's)."""
+    out = {"arms": {}, "invalid": [], "secondary": {}}
+    code = [r for r in v9_rows if r["arm"] == "installed+code"]
+    apply = [r for r in v10_rows if r["arm"] == "installed+apply"]
+    shas = {r.get("router_sha") for r in rows + code + apply}
+    if len(shas) != 1 or None in shas:
+        out["invalid"].append("files mix routers or lack router_sha: %s" % sorted(map(str, shas)))
+    stray = sorted({r["arm"] for r in rows} - {"installed+label"})
+    if stray:
+        out["invalid"].append("unexpected arms %s" % stray)
+    if any(r.get("named_rules") for r in rows + code + apply):
+        out["invalid"].append("a row's prompt named rules files")
+    if any(ctx(r).get(k, 0) for r in rows for k in ("hint_router", "hint_skill", "linked_table", "hint_apply")):
+        out["invalid"].append("an installed+label row received another arm's treatment")
+    if any(ctx(r).get("hint_label", 0) for r in code + apply):
+        out["invalid"].append("a v9 or v10 row carries the v11 label: wrong file")
+    groups = {"v9 code hook": code, "installed+label": rows, "v10 apply": apply}
+    valid = {}
+    for label, mine in groups.items():
+        valid[label], out["arms"][label] = _arm_stats(mine)
+        out["arms"][label]["label_hint_rate"] = _rate(valid[label], lambda r: ctx(r).get("hint_label", 0) > 0)
+        out["arms"][label]["apply_hint_rate"] = _rate(valid[label], lambda r: ctx(r).get("hint_apply", 0) > 0)
+        if any(not ctx(r).get("transcripts") for r in valid[label]):
+            out["invalid"].append("%s has valid rows with no CLI transcript to score" % label)
+        if not out["arms"][label]["rule_tests_passed"]["n"]:
+            out["invalid"].append("%s has no valid rows" % label)
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    plan = (("primary", "v9 code hook", "installed+label", "label_hint_rate", "installed+label"),
+            ("secondary: label -> v10 wording", "installed+label", "v10 apply", "apply_hint_rate", "v10 apply"))
+    for name, lo, hi, manip, marked in plan:
+        res = {"control": lo, "treatment": hi, "manipulation": manip,
+               "manipulation_rate": out["arms"][marked][manip]["rate"]}
+        if (res["manipulation_rate"] or 0) < MANIPULATION_MIN:
+            res["verdict"] = "MANIPULATION FAILED"
+        else:
+            res.update(_paired(valid[lo], valid[hi]))
+        if name == "primary":
+            out["primary"] = res
+            out["verdict"] = res["verdict"]
+        else:
+            out["secondary"][name] = res
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in out["arms"].values())
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--v11" in args:     # analyze --v11 <v11 runs.jsonl> <v10 runs.jsonl> <v9 runs.jsonl>
+        p11, p10, p9 = [a for a in args if a != "--v11"]
+        load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v11(load(p11), load(p10), load(p9)), indent=2, default=str))
+        return
     if "--v10" in args:     # analyze --v10 <v10 runs.jsonl> <v9 runs.jsonl> <v7 runs.jsonl>
         p10, p9, p7 = [a for a in args if a != "--v10"]
         load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
