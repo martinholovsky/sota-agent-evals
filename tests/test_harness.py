@@ -927,3 +927,49 @@ def test_v9_primary_secondary_and_validity():
     assert analyze_v9(rows, ctl, v8)["verdict"] == "INVALID"                     # control got a treatment
     assert analyze_v9(rows + [dict(rows[0], arm="installed")], v7, v8)["verdict"] == "INVALID"
     assert analyze_v9([dict(r, router_sha="bbbb") for r in rows], v7, v8)["verdict"] == "INVALID"
+
+
+# ---- v10: ROADMAP 73 (j) the code-rules hook says the rules are part of the task ------------
+
+def test_transcript_depth_counts_the_v10_marker(tmp_path):
+    from agent_evals.score import transcript_depth
+    _transcript(tmp_path / "t", ["x"], extra=json.dumps(
+        {"attachment": "SOTA: the code you just wrote in /w/a.py: These rules apply to this change: "
+                       "they are part of what was asked, not extras"}) + "\n")
+    got = transcript_depth(tmp_path / "t", set())
+    assert got["hint_code"] == 1 and got["hint_apply"] == 1
+
+
+def _v10_rows(apply_up=0, code_up=0, apply_hint=True):
+    v9, v7, _ = _v9_rows(code_up=code_up)
+    v9 = [r for r in v9 if r["arm"] == "installed+code"]
+    base = [r for r in v7 if r["arm"] == "installed"]
+    rows = []
+    for i, r in enumerate(base):
+        k = r["hidden"]["rules"]["passed"] + (1 if i < apply_up else 0)
+        rows.append(dict(r, arm="installed+apply", named_rules=[], hidden={"ok": k == 2, "spec_ok": True,
+                         "rules": {"passed": k, "total": 2}},
+                         context=dict(r["context"], hint_router=0, hint_skill=0, hint_code=1,
+                                      hint_apply=int(apply_hint))))
+    return rows, v9, v7
+
+
+def test_v10_primary_secondary_and_validity():
+    from agent_evals.analyze import analyze_v10
+    rows, v9, v7 = _v10_rows(apply_up=6)
+    got = analyze_v10(rows, v9, v7)
+    assert got["verdict"] == "SUPPORTED" and got["primary"]["paired_cases"] == 20
+    assert got["primary"]["control"] == "v9 code hook"
+    assert got["secondary"]["secondary: vs the plain install"]["verdict"] == "SUPPORTED"
+    r2, v9b, _ = _v10_rows(apply_up=6, code_up=6)            # v9 already as high: primary NULL
+    got2 = analyze_v10(r2, v9b, v7)
+    assert got2["verdict"] == "NULL" and got2["secondary"]["secondary: vs the plain install"]["verdict"] == "SUPPORTED"
+    assert analyze_v10(_v10_rows(apply_up=6, apply_hint=False)[0], v9, v7)["verdict"] == "MANIPULATION FAILED"
+    leak = [dict(r, context=dict(r["context"], hint_skill=1)) for r in rows]
+    assert analyze_v10(leak, v9, v7)["verdict"] == "INVALID"                    # apply got the depth hook
+    old = [dict(r, context=dict(r["context"], hint_apply=1)) for r in v9]
+    assert analyze_v10(rows, old, v7)["verdict"] == "INVALID"                   # v9 file carries v10 text
+    ctl = [dict(r, context=dict(r["context"], hint_apply=1)) if r["arm"] == "installed" else r for r in v7]
+    assert analyze_v10(rows, v9, ctl)["verdict"] == "INVALID"                   # control got a treatment
+    assert analyze_v10(rows + [dict(rows[0], arm="installed+code")], v9, v7)["verdict"] == "INVALID"
+    assert analyze_v10([dict(r, router_sha="bbbb") for r in rows], v9, v7)["verdict"] == "INVALID"

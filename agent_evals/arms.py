@@ -68,6 +68,10 @@ ARMS = {
     # SKILL.md), with v8's full-read depth hook. Asks whether a link in the index steers the choice.
     "installed+linked": Arm("installed+linked", library=True, hook=False, routing=True, depth_hook=True,
                             linked_table=True),
+    # v10 (2026-10-12): ROADMAP 73 (j). The same code-rules hook, read from a --sota-root whose hook
+    # text adds that the named rules are part of the task (build with a conservative default, do not
+    # hand back). Installed exactly as `installed+code`; the arm name separates the rows.
+    "installed+apply": Arm("installed+apply", library=True, hook=False, routing=True, code_hook=True),
 }
 
 LINKED_SKILL = "sota-python"
