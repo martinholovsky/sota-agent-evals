@@ -1,0 +1,225 @@
+{
+  "arms": {
+    "v9 code hook": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 38,
+        "n": 53,
+        "rate": 0.717
+      },
+      "runs_all_rules_passed": {
+        "k": 12,
+        "n": 20,
+        "rate": 0.6
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 817.5,
+      "mean_cost_usd": 0.5792,
+      "mean_turns": 25.1,
+      "label_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "apply_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      }
+    },
+    "installed+label": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 37,
+        "n": 53,
+        "rate": 0.698
+      },
+      "runs_all_rules_passed": {
+        "k": 12,
+        "n": 20,
+        "rate": 0.6
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 725.0,
+      "mean_cost_usd": 0.5251,
+      "mean_turns": 22.95,
+      "label_hint_rate": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "apply_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      }
+    },
+    "v10 apply": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 48,
+        "n": 53,
+        "rate": 0.906
+      },
+      "runs_all_rules_passed": {
+        "k": 17,
+        "n": 20,
+        "rate": 0.85
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 18,
+        "n": 20,
+        "rate": 0.9
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 789.5,
+      "mean_cost_usd": 0.6152,
+      "mean_turns": 26.4,
+      "label_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "apply_hint_rate": {
+        "k": 18,
+        "n": 20,
+        "rate": 0.9
+      }
+    }
+  },
+  "invalid": [],
+  "secondary": {
+    "secondary: label -> v10 wording": {
+      "control": "installed+label",
+      "treatment": "v10 apply",
+      "manipulation": "apply_hint_rate",
+      "manipulation_rate": 0.9,
+      "paired_cases": 20,
+      "control_rate": 0.698,
+      "treatment_rate": 0.906,
+      "diff": 0.208,
+      "sign_flip_one_sided_p": 0.0156,
+      "cases_up": 6,
+      "cases_down": 0,
+      "per_case": {
+        "w01": "3 -> 3 of 3",
+        "w02": "0 -> 0 of 2",
+        "w03": "0 -> 1 of 2",
+        "w04": "1 -> 2 of 2",
+        "w05": "4 -> 4 of 4",
+        "w06": "0 -> 3 of 3",
+        "w07": "0 -> 2 of 2",
+        "w08": "3 -> 3 of 3",
+        "w09": "3 -> 3 of 3",
+        "w10": "2 -> 2 of 2",
+        "w11": "2 -> 2 of 2",
+        "w12": "3 -> 3 of 3",
+        "w13": "3 -> 3 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "2 -> 2 of 2",
+        "w17": "3 -> 3 of 3",
+        "w18": "0 -> 0 of 2",
+        "w19": "3 -> 4 of 4",
+        "w20": "1 -> 4 of 4"
+      },
+      "verdict": "SUPPORTED"
+    }
+  },
+  "primary": {
+    "control": "v9 code hook",
+    "treatment": "installed+label",
+    "manipulation": "label_hint_rate",
+    "manipulation_rate": 0.95,
+    "paired_cases": 20,
+    "control_rate": 0.717,
+    "treatment_rate": 0.698,
+    "diff": -0.019,
+    "sign_flip_one_sided_p": 1.0,
+    "cases_up": 0,
+    "cases_down": 1,
+    "per_case": {
+      "w01": "3 -> 3 of 3",
+      "w02": "0 -> 0 of 2",
+      "w03": "0 -> 0 of 2",
+      "w04": "1 -> 1 of 2",
+      "w05": "4 -> 4 of 4",
+      "w06": "0 -> 0 of 3",
+      "w07": "0 -> 0 of 2",
+      "w08": "3 -> 3 of 3",
+      "w09": "3 -> 3 of 3",
+      "w10": "2 -> 2 of 2",
+      "w11": "2 -> 2 of 2",
+      "w12": "3 -> 3 of 3",
+      "w13": "3 -> 3 of 3",
+      "w14": "2 -> 2 of 2",
+      "w15": "2 -> 2 of 2",
+      "w16": "2 -> 2 of 2",
+      "w17": "3 -> 3 of 3",
+      "w18": "0 -> 0 of 2",
+      "w19": "3 -> 3 of 4",
+      "w20": "2 -> 1 of 4"
+    },
+    "verdict": "NULL"
+  },
+  "verdict": "NULL",
+  "compromised": false
+}
