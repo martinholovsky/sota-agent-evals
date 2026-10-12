@@ -107,4 +107,10 @@ whether the agents still defer and on what grounds. If INCONCLUSIVE, the operato
 
 ## Deviations
 
-None yet.
+1. **Recorded 2026-10-12 07:00 CEST, before any main run.** The account now tops itself up when credit
+   falls to $5, so it never holds the $15 the guard needs for one invocation (it read $10.24). The 20
+   runs go in **two invocations** of 10 cases each (`w01`–`w10`, then `w11`–`w20`), at
+   `--concurrency 2` and `--total-budget-usd 9` each, so the guard needs max($9, 2 × $3.75) = $9 per
+   half. Arm, cases, model, limits and analysis are unchanged; the two `runs.jsonl` files are
+   concatenated before `analyze --v10`. Lower concurrency changes only how many runs share the
+   provider at once. If a half stops at its cap, the unrun cases are reported as missing, not re-run.
