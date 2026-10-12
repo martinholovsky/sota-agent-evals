@@ -79,7 +79,9 @@ Routes read from the transcripts (`route.py`); descriptive.
 - **Six runs did not reach a cited file:** w10, w11, w12, w16, w17, w18. Four of them opened no rules
   file at all (w10, w11, w17, w18). w10 and w17 passed every rule test without reading, as they did
   in v12. w11 (email header) and w12 (search wildcards) have rows that match the code, but nothing in
-  the prompt matches a row before the code is written.
+  the prompt matches a row before the code is written. *Corrected 2026-10-12: not so for w12. v9's offline replay found no row matching its written
+  code, "a wildcard turned into a regex" (PRE-REGISTRATION-v9.md). w11 has a matching row ("builds
+  an email or a message header"); why it was not followed is not established.*
 - **Hand-backs remain in 4 of the 5 runs that failed a rule test**, in v9's pattern:
   - w06: rate limiting "needs to sit at the transport or gateway";
   - w18: "that belongs wherever the handlers are exposed";
@@ -116,7 +118,15 @@ Routes read from the transcripts (`route.py`); descriptive.
 
 ## Deviations
 
-None.
+None in the run.
+
+**A correction to the frozen pre-registration (found 2026-10-12, after the run).** "What else differs
+between the two roots" undercounts the router. Diffing its link targets (v12 tree `b098e3e` against
+SOTA-skills `8251f597`, before the table) shows main's router has **6 rules-file links** that v12's
+lacks: `sota-code-security` rules/09, 18 and 22, `sota-devsecops` rules/04, `sota-observability`
+rules/05 and `sota-sandboxing` rules/05. Of the 20 cases, only w08 and w19 cite any of them (rules/09).
+Both reached a cited file in both arms, and **none of the 8 cases that moved up cites one**, so these
+links do not account for the primary result.
 
 ## Spend
 
