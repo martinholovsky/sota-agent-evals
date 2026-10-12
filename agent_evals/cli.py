@@ -23,7 +23,7 @@ from pathlib import Path
 from .arms import ARMS, cleanup, parse_arms, sota_skill_names
 from .runner import RunConfig, options_for, prompt_for, run_one
 from .score import (contamination, depth, hidden_pass, rules_fingerprints, shipped_broken,
-                    transcript_depth, tree_changed, unverified_done)
+                    transcript_depth, tree_changed, unverified_done, cited_reach)
 from .workspace import load_cases
 
 HERE = Path(__file__).resolve().parent.parent
@@ -99,6 +99,9 @@ def cmd_dry_run(a) -> int:
     return 0
 
 
+LINK_ROUTER_MARK = "[`sota-architecture`](../sota-architecture/SKILL.md)"   # = score.HOOK_MARKERS["links_router"]
+
+
 def router_sha(sota_root: Path) -> str:
     """Which router a row ran against: v5 compares two, and the analysis refuses mixed files."""
     import hashlib
@@ -125,7 +128,8 @@ def _row(arm, case, sample, ws, tr, a, sota_skills, tdir=None, fp=None) -> dict:
         # v7: the rules files this run's PROMPT named (empty for every arm but installed+named)
         "named_rules": list(case.rules_files) if arm.named_rules else [],
         # v6 primary: rules text in any tool result, read from the CLI's own transcript (kept)
-        "context": transcript_depth(tdir, fp) if tdir is not None and fp else None,
+        "context": dict(transcript_depth(tdir, fp), **cited_reach(tdir, case.rules_files))
+        if tdir is not None and fp else None,
     }
 
 
@@ -159,6 +163,12 @@ def cmd_run(a, preflight: bool = False) -> int:
                 if not case.rules_files or bad:
                     raise SystemExit("%s arm: case %s names no rules files, or ones missing from %s: %s"
                                      % (arm.name, case.id, a.sota_root, bad))
+    links_root = LINK_ROUTER_MARK in (a.sota_root / "skills" / "sota" / "SKILL.md").read_text(encoding="utf-8")
+    for arm in arms:      # v12: the arm name must match the root, or two runs measure one library
+        if arm.name == "installed+links" and not links_root:
+            raise SystemExit("installed+links arm: %s's router has no relative links — wrong --sota-root" % a.sota_root)
+        if arm.name in ("installed", "bare", "library") and links_root and not preflight:
+            raise SystemExit("%s arm: %s is the links root — run the control from the plain root" % (arm.name, a.sota_root))
     jobs = [(s, case, arm) for s in range(samples) for case in cases for arm in arms]  # interleaved
     state = {"spent": 0.0, "n": 0, "stopped": False}
     base_usage = openrouter_usage(key) if a.provider == "openrouter" else None

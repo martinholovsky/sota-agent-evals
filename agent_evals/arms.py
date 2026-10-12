@@ -75,6 +75,11 @@ ARMS = {
     # v11 (2026-10-12): the same hook from a root whose added line is only a bare "MANDATORY:" label,
     # to separate the label from v10's wording (the rules are part of the task, no hand-back).
     "installed+label": Arm("installed+label", library=True, hook=False, routing=True, code_hook=True),
+    # v12 (2026-10-12): `installed`, run from a --sota-root whose skill files write every pointer to
+    # another skill or rules file as a relative Markdown link instead of a bare name ("links vs
+    # names"). Identical install; cli refuses the arm on a root without the links, and the plain
+    # arms on a root with them.
+    "installed+links": Arm("installed+links", library=True, hook=False, routing=True),
 }
 
 LINKED_SKILL = "sota-python"

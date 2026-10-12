@@ -193,7 +193,9 @@ HOOK_MARKERS = {"hint_router": "router is a map and applies no rule by itself",
                 "hint_code": "SOTA: the code you just wrote in",                 # v9 code-rules hook
                 "linked_table": "What your code does: the rules outside this skill",  # v9 linked index
                 "hint_apply": "they are part of what was asked",                  # v10 (j) hook wording
-                "hint_label": "MANDATORY: apply the rules in each file named above"}  # v11 label only
+                "hint_label": "MANDATORY: apply the rules in each file named above",  # v11 label only
+                # v12: the router's routing-table row as a relative link -- only the links root has it
+                "links_router": "[`sota-architecture`](../sota-architecture/SKILL.md)"}
 _PREFIXES = (re.compile(r"^\s*\d+\t"), re.compile(r"^(?:[^\s:]+:)?\d+[:-]"))
 
 
@@ -252,3 +254,35 @@ def transcript_depth(tdir: Path, fp: set) -> dict:
     for p in spilled:
         seen += _lines_hit(p.read_text(encoding="utf-8", errors="replace"), fp)
     return {"transcripts": len(files), "rules_lines_seen": seen, "rules_in_context": seen > 0, **hints}
+
+
+def cited_reach(tdir: Path, rules_files) -> dict:
+    """v12: did the run reach the rules files its case cites? Read from the CLI's own transcript:
+    every tool_use input that names a cited file by its path tail (`sota-x/rules/NN-topic.md`), any
+    tool (Read, Bash cat/grep, Grep) -- the definition v9's report used. `rules_read_errors` counts
+    Reads of a rules path that came back as an error: a pointer that carries no filename makes the
+    agent guess one, and every such miss seen in v6-v11 was a guessed name (8 of 8)."""
+    tails = {f.split("skills/", 1)[-1] for f in rules_files}
+    files = sorted(Path(tdir).rglob("*.jsonl")) if Path(tdir).is_dir() else []
+    hit, reads, errors = set(), {}, 0
+    for f in files:
+        for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            content = (rec.get("message") or {}).get("content")
+            if not isinstance(content, list):
+                continue
+            for b in content:
+                if not isinstance(b, dict):
+                    continue
+                if b.get("type") == "tool_use":
+                    text = json.dumps(b.get("input") or {})
+                    hit |= {t for t in tails if t in text}
+                    if b.get("name") == "Read" and RULES_FILE.search(text):
+                        reads[b.get("id")] = True
+                elif b.get("type") == "tool_result" and b.get("is_error") and b.get("tool_use_id") in reads:
+                    errors += 1
+    return {"cited_files": len(tails), "cited_opened": len(hit), "cited_reached": bool(hit),
+            "rules_read_errors": errors}

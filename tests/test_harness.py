@@ -1004,3 +1004,51 @@ def test_v11_primary_secondary_and_validity():
     assert analyze_v11(rows, old, v9)["verdict"] == "INVALID"                    # v10 file carries the label
     assert analyze_v11(rows + [dict(rows[0], arm="installed+apply")], v10, v9)["verdict"] == "INVALID"
     assert analyze_v11([dict(r, router_sha="bbbb") for r in rows], v10, v9)["verdict"] == "INVALID"
+
+
+def _v12_rows(reach_up=0, reach_down=0, links=True):
+    def row(case, arm, sha, reached, lk):
+        return {"case": case, "arm": arm, "sample": 0, "error": None, "router_sha": sha, "named_rules": [],
+                "result": {"total_cost_usd": 0.4, "num_turns": 20}, "depth": {"past_router": reached},
+                "hidden": {"ok": True, "spec_ok": True, "rules": {"passed": 1, "total": 2}},
+                "context": {"transcripts": 1, "cited_reached": reached, "links_router": lk,
+                            "rules_read_errors": 0}}
+    cases = ["w%02d" % i for i in range(1, 21)]
+    control = [row(c, "installed", "aaaa", i < 5, 0) for i, c in enumerate(cases)]
+    treat = [row(c, "installed+links", "cccc",
+                 (i < 5 and i >= reach_down) or (5 <= i < 5 + reach_up), int(links)) for i, c in enumerate(cases)]
+    return treat, control
+
+
+def test_v12_reach_verdicts_and_validity():
+    from agent_evals.analyze import analyze_v12, _binom_tail
+    assert abs(_binom_tail(5, 5) - 1 / 32) < 1e-12 and _binom_tail(0, 0) == 1.0
+    t, c = _v12_rows(reach_up=6)
+    got = analyze_v12(t, c)
+    assert got["verdict"] == "SUPPORTED" and got["primary"]["diff"] == 0.3, got
+    assert got["secondary"]["rule tests"]["verdict"] == "NULL"
+    assert analyze_v12(*_v12_rows(reach_up=1))["verdict"] == "NULL"
+    assert analyze_v12(*_v12_rows(reach_up=4, reach_down=1))["verdict"] == "INCONCLUSIVE"   # p = 3/16
+    assert analyze_v12(*_v12_rows(reach_up=6, links=False))["verdict"] == "MANIPULATION FAILED"
+    assert analyze_v12([dict(r, router_sha="aaaa") for r in t], c)["verdict"] == "INVALID"   # same router
+    leak = [dict(r, context=dict(r["context"], links_router=1)) for r in c]
+    assert analyze_v12(t, leak)["verdict"] == "INVALID"                                       # control saw links
+    bare = [dict(r, context={"transcripts": 1}) for r in c]
+    assert analyze_v12(t, bare)["verdict"] == "INVALID"                                       # not annotated
+    hook = [dict(r, context=dict(r["context"], hint_code=1)) for r in t]
+    assert analyze_v12(hook, c)["verdict"] == "INVALID"
+    assert analyze_v12(t + [dict(t[0], arm="installed")], c)["verdict"] == "INVALID"
+
+
+def test_cited_reach_reads_tool_inputs_and_errors(tmp_path):
+    from agent_evals.score import cited_reach
+    d = tmp_path / "t"; d.mkdir()
+    recs = [{"message": {"content": [{"type": "tool_use", "id": "a", "name": "Read",
+                                      "input": {"file_path": "/x/skills/sota-sh/rules/06-guess.md"}}]}},
+            {"message": {"content": [{"type": "tool_result", "tool_use_id": "a", "is_error": True, "content": "no"}]}},
+            {"message": {"content": [{"type": "tool_use", "id": "b", "name": "Bash",
+                                      "input": {"command": "grep -n x skills/sota-cs/rules/01-input.md"}}]}}]
+    (d / "s.jsonl").write_text("\n".join(json.dumps(r) for r in recs))
+    got = cited_reach(d, ["skills/sota-cs/rules/01-input.md", "skills/sota-cs/rules/09-z.md"])
+    assert got == {"cited_files": 2, "cited_opened": 1, "cited_reached": True, "rules_read_errors": 1}
+    assert cited_reach(tmp_path / "missing", ["skills/sota-cs/rules/01-input.md"])["cited_reached"] is False
