@@ -788,6 +788,82 @@ def analyze_v13(rows: list, v12_rows: list) -> dict:
     return out
 
 
+V14_WEAK = ("w01", "w15", "w18")   # cases-v5 SELECTION.md: weak citations, a sensitivity cut
+
+
+def cases_v5_uncited(tasks_dir) -> tuple:
+    """Cases whose rule tests are ALL uncited. Primary = cited rule tests, scored per case, so a case
+    mixing cited and uncited tests would need per-test results: refused rather than approximated."""
+    from pathlib import Path
+    out = []
+    for f in sorted(Path(tasks_dir).glob("w*/rules.json")):
+        cited = ["quote" in e for e in json.loads(f.read_text(encoding="utf-8"))]
+        if not cited or (any(cited) and not all(cited)):
+            raise SystemExit("%s mixes cited and uncited rule tests (or has none)" % f)
+        if not any(cited):
+            out.append(f.parent.name)
+    if not out and not list(Path(tasks_dir).glob("w*/rules.json")):
+        raise SystemExit("no rules.json under %s" % tasks_dir)
+    return tuple(out)
+
+
+def analyze_v14(rows: list, control: list, uncited: tuple) -> dict:
+    """v14 (PRE-REGISTRATION-v14.md): the SHIPPED DEFAULT out of sample. cases-v5's calibration rows
+    (`installed+links`, the library without the router table and without the code-rules hook) ->
+    `installed+table+code` (the table root plus the hook). Primary: CITED rule tests (cases-v5
+    SELECTION.md), v7's paired rule. Secondary: all rule tests; reach (v12's thresholds). Sensitivity:
+    cited without the weak citations. Manipulation: the hook spoke in >= 0.5 of the treatment's runs.
+    The table and the hook both carry v10's paragraph, so `hint_apply` is EXPECTED in the treatment."""
+    out = {"arms": {}, "invalid": [], "secondary": {}}
+    stray = sorted({r["arm"] for r in rows} - {"installed+table+code"}) + \
+        sorted({r["arm"] for r in control} - {"installed+links"})
+    if stray:
+        out["invalid"].append("unexpected arms %s" % stray)
+    t_sha = {r.get("router_sha") for r in rows}
+    c_sha = {r.get("router_sha") for r in control}
+    if len(t_sha) != 1 or len(c_sha) != 1 or None in t_sha | c_sha or t_sha == c_sha:
+        out["invalid"].append("each arm needs one router, and they must differ: %s vs %s"
+                              % (sorted(map(str, c_sha)), sorted(map(str, t_sha))))
+    if any(r.get("named_rules") for r in rows + control):
+        out["invalid"].append("a row's prompt named rules files")
+    if any(ctx(r).get(k, 0) for r in rows + control for k in ("hint_router", "hint_skill", "linked_table", "hint_label")):
+        out["invalid"].append("a row received a depth-hook, index-table or label treatment")
+    if any(ctx(r).get(k, 0) for r in control for k in ("hint_code", "hint_apply", "table_router")):
+        out["invalid"].append("a control row received the treatment")
+    if any("cited_reached" not in ctx(r) or "table_router" not in ctx(r) for r in rows + control):
+        out["invalid"].append("a row lacks the reach fields (no transcript)")
+    valid = {}
+    for label, mine in (("control (installed+links)", control), ("installed+table+code", rows)):
+        valid[label], out["arms"][label] = _arm_stats(mine)
+        v = valid[label]
+        out["arms"][label].update({
+            "code_hint_rate": _rate(v, lambda r: ctx(r).get("hint_code", 0) > 0),
+            "table_rate": _rate(v, lambda r: ctx(r).get("table_router", 0) > 0),
+            "cited_reached": _rate(v, lambda r: bool(ctx(r).get("cited_reached"))),
+            "rules_read_errors": sum(ctx(r).get("rules_read_errors", 0) for r in v)})
+        if not out["arms"][label]["rule_tests_passed"]["n"]:
+            out["invalid"].append("%s has no valid rows" % label)
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    rate = out["arms"]["installed+table+code"]["code_hint_rate"]["rate"] or 0
+    if rate < MANIPULATION_MIN:
+        out["primary"] = {"verdict": "MANIPULATION FAILED", "code_hint_rate": rate}
+        out["verdict"] = "MANIPULATION FAILED"
+        return out
+    c, t = valid["control (installed+links)"], valid["installed+table+code"]
+    keep = lambda vs, drop: [r for r in vs if r["case"] not in drop]
+    out["primary"] = dict(_paired(keep(c, uncited), keep(t, uncited)), outcome="cited rule tests",
+                          excluded_uncited_cases=list(uncited))
+    out["verdict"] = out["primary"]["verdict"]
+    out["secondary"]["all rule tests"] = _paired(c, t)
+    out["secondary"]["reach"] = _paired_reach(c, t)
+    out["secondary"]["sensitivity: cited without weak citations"] = _paired(
+        keep(c, uncited + V14_WEAK), keep(t, uncited + V14_WEAK))
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in out["arms"].values())
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
     if "--annotate-reach" in args:   # analyze --annotate-reach <runs.jsonl> <results-dir> <cases.jsonl>
@@ -795,6 +871,11 @@ def main(argv=None):
         rows = [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
         for r in annotate_reach(rows, rd, cp):
             print(json.dumps(r, default=str))
+        return
+    if "--v14" in args:     # analyze --v14 <v14 runs.jsonl> <cases-v5 calibration runs.jsonl> <cases-v5/tasks>
+        p14, pc, td = [a for a in args if a != "--v14"]
+        load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v14(load(p14), load(pc), cases_v5_uncited(td)), indent=2))
         return
     if "--v13" in args:     # analyze --v13 <v13 runs.jsonl> <v12 runs re-annotated by --annotate-reach>
         p13, p12 = [a for a in args if a != "--v13"]

@@ -86,6 +86,10 @@ ARMS = {
     # of any kind, so it stands for every host but Claude Code. cli refuses it on a root without the
     # table, and the other installed arms on a root with it.
     "installed+table": Arm("installed+table", library=True, hook=False, routing=True),
+    # v14 (2026-10-13): the SHIPPED DEFAULT on cases-v5. The table root's router plus the code-rules
+    # hook, as the plugin registers both (and install.sh offers the hook with a default of yes). Same
+    # install as `installed+apply`; the name says which root it needs, and cli refuses it on any other.
+    "installed+table+code": Arm("installed+table+code", library=True, hook=False, routing=True, code_hook=True),
 }
 
 LINKED_SKILL = "sota-python"

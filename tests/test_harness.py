@@ -1101,3 +1101,68 @@ def test_cited_reach_reads_tool_inputs_and_errors(tmp_path):
     got = cited_reach(d, ["skills/sota-cs/rules/01-input.md", "skills/sota-cs/rules/09-z.md"])
     assert got == {"cited_files": 2, "cited_opened": 1, "cited_reached": True, "rules_read_errors": 1}
     assert cited_reach(tmp_path / "missing", ["skills/sota-cs/rules/01-input.md"])["cited_reached"] is False
+
+
+def _v14_rows(up=0, down=0, hook=True, w02_up=False):
+    """20 cases, 2 rule tests each; control passes 1 of 2. Treatment: `up` cases among w03.. pass 2,
+    `down` cases pass 0. w02 (uncited) moves only when w02_up."""
+    def row(case, arm, sha, passed, code, tb):
+        return {"case": case, "arm": arm, "sample": 0, "error": None, "router_sha": sha, "named_rules": [],
+                "result": {"total_cost_usd": 0.4, "num_turns": 20}, "depth": {},
+                "hidden": {"ok": True, "spec_ok": True, "rules": {"passed": passed, "total": 2}},
+                "context": {"transcripts": 1, "cited_reached": bool(code), "table_router": tb,
+                            "hint_code": code, "hint_apply": code, "rules_read_errors": 0}}
+    cases = ["w%02d" % i for i in range(1, 21)]
+    control = [row(c, "installed+links", "cccc", 1, 0, 0) for c in cases]
+    movable = [c for c in cases if c != "w02"]
+    def passed(c):
+        if c == "w02":
+            return 2 if w02_up else 1
+        i = movable.index(c)
+        return 2 if i < up else 0 if i < up + down else 1
+    treat = [row(c, "installed+table+code", "dddd", passed(c), int(hook), 1) for c in cases]
+    return treat, control
+
+
+def test_v14_verdicts_validity_and_uncited_exclusion():
+    from agent_evals.analyze import analyze_v14
+    t, c = _v14_rows(up=5)
+    got = analyze_v14(t, c, ("w02",))
+    assert got["verdict"] == "SUPPORTED" and got["primary"]["paired_cases"] == 19, got   # p = 1/32
+    assert analyze_v14(*_v14_rows(up=4), ("w02",))["verdict"] == "INCONCLUSIVE"         # p = 1/16
+    assert analyze_v14(*_v14_rows(up=0), ("w02",))["verdict"] == "NULL"
+    # the uncited case cannot carry the primary: w02 moving alone leaves it NULL
+    got = analyze_v14(*_v14_rows(w02_up=True), ("w02",))
+    assert got["verdict"] == "NULL" and got["secondary"]["all rule tests"]["cases_up"] == 1, got
+    assert analyze_v14(*_v14_rows(up=5, hook=False), ("w02",))["verdict"] == "MANIPULATION FAILED"
+    assert analyze_v14([dict(r, router_sha="cccc") for r in t], c, ("w02",))["verdict"] == "INVALID"
+    for k in ("hint_code", "hint_apply", "table_router"):                                  # control leaks
+        assert analyze_v14(t, [dict(r, context=dict(r["context"], **{k: 1})) for r in c], ("w02",))["verdict"] == "INVALID"
+    assert analyze_v14([dict(r, context=dict(r["context"], hint_router=1)) for r in t], c, ("w02",))["verdict"] == "INVALID"
+    assert analyze_v14(t + [dict(t[0], arm="installed+apply")], c, ("w02",))["verdict"] == "INVALID"
+    assert analyze_v14(t, [dict(r, context={"transcripts": 1}) for r in c], ("w02",))["verdict"] == "INVALID"
+
+
+def test_v14_uncited_cases_read_from_rules_json(tmp_path):
+    import pytest
+    from agent_evals.analyze import cases_v5_uncited
+    real = Path(__file__).resolve().parent.parent / "cases-v5" / "tasks"
+    assert cases_v5_uncited(real) == ("w02",)
+    (tmp_path / "w01").mkdir()
+    (tmp_path / "w01" / "rules.json").write_text(json.dumps([{"test": "a", "quote": "q"}, {"test": "b", "uncited": "x"}]))
+    with pytest.raises(SystemExit):
+        cases_v5_uncited(tmp_path)
+
+
+def test_v14_cli_refuses_shipped_arm_without_table(tmp_path, monkeypatch):
+    import argparse, pytest
+    from agent_evals import cli
+    r = tmp_path / "p"; (r / "skills" / "sota").mkdir(parents=True)
+    (r / "skills" / "sota" / "SKILL.md").write_text("x\n" + cli.LINK_ROUTER_MARK + "\n")
+    a = argparse.Namespace(provider="openrouter", model="m", sota_root=r, max_turns=1, max_budget_usd=1,
+                           timeout=1, out=str(tmp_path / "o"), only=None, arms="installed+table+code", samples=1,
+                           cases=Path(__file__).resolve().parent.parent / "cases-v5")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "dummy-not-a-key")
+    with pytest.raises(SystemExit) as e:
+        cli.cmd_run(a)
+    assert "installed+table+code arm" in str(e.value) and "trigger table" in str(e.value), e.value

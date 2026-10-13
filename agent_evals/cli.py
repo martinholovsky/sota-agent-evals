@@ -168,8 +168,8 @@ def cmd_run(a, preflight: bool = False) -> int:
     links_root = LINK_ROUTER_MARK in router_text
     table_root = TABLE_ROUTER_MARK in router_text
     for arm in arms:      # v13: likewise for the router's trigger table
-        if arm.name == "installed+table" and not table_root:
-            raise SystemExit("installed+table arm: %s's router has no trigger table — wrong --sota-root" % a.sota_root)
+        if arm.name in ("installed+table", "installed+table+code") and not table_root:
+            raise SystemExit("%s arm: %s's router has no trigger table — wrong --sota-root" % (arm.name, a.sota_root))
         if arm.name in ("installed", "installed+links", "bare", "library") and table_root and not preflight:
             raise SystemExit("%s arm: %s is the table root — run that arm from its own root" % (arm.name, a.sota_root))
     for arm in arms:      # v12: the arm name must match the root, or two runs measure one library
