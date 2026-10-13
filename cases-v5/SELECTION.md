@@ -100,6 +100,44 @@ file. A task whose author breaks this is re-authored by a fresh blind author fro
 - With 20 tasks and one sample per case, a SUPPORTED/NULL result is paired and coarse, like
   v7–v13.
 
+## Freeze
+
+**Tasks frozen 2026-10-13 at commit `b3f402e`**, `cases-v5/tasks` git tree
+`36028842436860726e7235d721f0933f148196ea`. There are 20 tasks and 32 rule tests.
+`build.py --verify` reports 0 of 20 tasks with problems, on three consecutive runs. Screening
+covered ranks 1–114 of `ORDER.txt` (`SCREENING.md`). The spec read is in `SPEC-READ.md`: 12 tasks
+fixed and 8 passed as written, with two concerns left open:
+
+- **w12:** the prompt's "more forgiving sign-in" is the lure that leads the naive solution to trim
+  passwords.
+- **w17:** with no length stated for the code, the naive 4-digit choice is plausible but not the
+  obvious one.
+
+Citations come next and must not edit `tasks/`; see "Spec read, freeze, then citation".
+
 ## Deviations
 
-None yet.
+1. **Context every subagent received.** The harness injected the operator's global CLAUDE.md, this
+   library's AGENTS.md and a memory index into every screener, author and reader. A check of one
+   author's injected block found:
+   - no rule text;
+   - no instance of the trigger table's heading ("What your code does");
+   - 0 occurrences of SSRF, formula, throttl, session lifetime, rate limit, CSV, webhook,
+     pagination, recovery code, OTP or password.
+
+   Blindness to the library's rules and table holds. Blindness to the library's existence does
+   not.
+2. **Transcript audit.** Each of the 7 blind agents' tool inputs was parsed:
+   - screener: 5 Bash calls;
+   - authors: 13–20 Bash calls each;
+   - reader: 34 Bash calls and 1 Read.
+
+   No tool input names SOTA-skills, an installed skill, sota-agent-evals or a cases-v1–v4 task. No
+   tool result carries a library rules-file path. The reader's one Read was a harness overflow
+   file of its own output.
+3. **One author's grep crossed into other authors' tasks.** The w13–w16 author's glob
+   `cases-v5/tasks/*/hidden/test_rules.py` also matched w05, w17 and w18. By its report, it
+   filtered the output to its own ids. This is cross-author, not the library.
+4. **Licence check.** There are 0 seven-word overlaps between the ASVS requirement texts and any of
+   the 198 committed task files, `SCREENING.md` or `SPEC-READ.md`.
+5. **Built case directories are committed** (`cases-v5/wNN/`), as cases-v4 commits its own.
