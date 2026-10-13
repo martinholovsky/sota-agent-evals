@@ -1,0 +1,3 @@
+[{"test": "test_raw_html_is_not_rendered_as_markup", "asvs": "V1.3.5"},
+ {"test": "test_links_cannot_run_script", "asvs": "V1.3.5"},
+ {"test": "test_link_url_cannot_add_attributes", "asvs": "V1.3.5"}]

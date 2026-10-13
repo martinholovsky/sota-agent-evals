@@ -1,0 +1,2 @@
+[{"test": "test_customer_text_cannot_reach_object_attributes", "asvs": "V1.3.7"},
+ {"test": "test_customer_text_cannot_use_format_directives", "asvs": "V1.3.7"}]

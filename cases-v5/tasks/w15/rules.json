@@ -1,0 +1,2 @@
+[{"test": "test_reset_link_does_not_open_a_session", "asvs": "V9.2.2"},
+ {"test": "test_session_token_cannot_reset_password", "asvs": "V9.2.2"}]

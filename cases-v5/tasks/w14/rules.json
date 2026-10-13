@@ -1,0 +1,2 @@
+[{"test": "test_restore_does_not_call_what_the_string_names", "asvs": "V1.5.2"},
+ {"test": "test_restore_does_not_build_foreign_types", "asvs": "V1.5.2"}]

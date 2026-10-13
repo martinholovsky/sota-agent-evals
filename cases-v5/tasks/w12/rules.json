@@ -1,0 +1,2 @@
+[{"test": "test_password_with_extra_or_changed_characters_is_rejected", "asvs": "V6.2.8"},
+ {"test": "test_password_that_really_has_spaces_is_kept_exactly", "asvs": "V6.2.8"}]
