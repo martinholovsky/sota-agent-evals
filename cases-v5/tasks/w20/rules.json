@@ -1,1 +1,9 @@
-[{"test": "test_huge_page_size_is_not_served_in_full", "asvs": "V15.2.2"}]
+[
+  {
+    "test": "test_huge_page_size_is_not_served_in_full",
+    "asvs": "V15.2.2",
+    "file": "skills/sota-api-design/rules/01-rest-http-design.md",
+    "quote": "Always enforce a server-side `limit` max (e.g., 100). Reject or clamp larger values — document which.",
+    "note": "Pagination section; page_size is the limit parameter."
+  }
+]

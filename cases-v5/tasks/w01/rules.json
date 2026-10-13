@@ -1,2 +1,16 @@
-[{"test": "test_edited_role_is_refused", "asvs": "V9.1.1"},
- {"test": "test_edited_expiry_is_refused", "asvs": "V9.1.1"}]
+[
+  {
+    "test": "test_edited_role_is_refused",
+    "asvs": "V9.1.1",
+    "file": "skills/sota-code-security/rules/05-web-security.md",
+    "quote": "Never store authorization-relevant state client-side unsigned (e.g. `is_admin=1` cookie); signed cookies must also be encrypted if contents are sensitive, and validated server-side per request.",
+    "note": "Section '## 7. Cookies'; the sentence is not cookie-only ('client-side', e.g. a cookie). The token carries role and expiry, i.e. authorization-relevant state held by the client, so it must be signed and validated server-side."
+  },
+  {
+    "test": "test_edited_expiry_is_refused",
+    "asvs": "V9.1.1",
+    "file": "skills/sota-code-security/rules/05-web-security.md",
+    "quote": "Never store authorization-relevant state client-side unsigned (e.g. `is_admin=1` cookie); signed cookies must also be encrypted if contents are sensitive, and validated server-side per request.",
+    "note": "Section '## 7. Cookies'. The expiry decides whether the token still authorizes, so it is authorization-relevant state; signing plus server-side validation per request refuses an edited expiry."
+  }
+]

@@ -1,2 +1,16 @@
-[{"test": "test_reset_link_does_not_open_a_session", "asvs": "V9.2.2"},
- {"test": "test_session_token_cannot_reset_password", "asvs": "V9.2.2"}]
+[
+  {
+    "test": "test_reset_link_does_not_open_a_session",
+    "asvs": "V9.2.2",
+    "file": "skills/sota-identity-access/rules/01-federation-protocols.md",
+    "quote": "Make the kind of token machine-checkable, and check it.",
+    "note": "Bolded imperative in '## 2'; the bullet's example is several JWT kinds signed by one issuer with the same keys. Here one Users key signs session and reset tokens, so each verifier must check the token kind."
+  },
+  {
+    "test": "test_session_token_cannot_reset_password",
+    "asvs": "V9.2.2",
+    "file": "skills/sota-identity-access/rules/01-federation-protocols.md",
+    "quote": "Make the kind of token machine-checkable, and check it.",
+    "note": "As above, in the other direction."
+  }
+]

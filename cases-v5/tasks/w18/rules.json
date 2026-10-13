@@ -1,1 +1,9 @@
-[{"test": "test_guessing_the_reset_code_is_limited", "asvs": "V6.6.3"}]
+[
+  {
+    "test": "test_guessing_the_reset_code_is_limited",
+    "asvs": "V6.6.3",
+    "file": "skills/sota-code-security/rules/02-authentication.md",
+    "quote": "Are login, registration, and reset endpoints rate-limited with uniform errors/timing across \"user exists\" states, including each step of a multi-step login (§1)?",
+    "note": "Audit checklist item of rules/02: the reset endpoint must be rate-limited, which caps guesses at the 6-digit code."
+  }
+]

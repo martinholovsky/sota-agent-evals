@@ -1,2 +1,16 @@
-[{"test": "test_successful_key_authentication_is_logged", "asvs": "V16.3.1"},
- {"test": "test_failed_key_authentication_is_logged", "asvs": "V16.3.1"}]
+[
+  {
+    "test": "test_successful_key_authentication_is_logged",
+    "asvs": "V16.3.1",
+    "file": "skills/sota-code-security/rules/07-data-exposure.md",
+    "quote": "Do log (security observability, OWASP A09): authn successes/failures, authz denials, validation rejections, privilege/role changes, MFA/recovery events, admin actions — with actor, action, target, result, source IP, timestamp; ship to an append-only store with alerting on anomalies.",
+    "note": "Section '## 2' security logging; an API-key authentication is an authn success, logged with the actor."
+  },
+  {
+    "test": "test_failed_key_authentication_is_logged",
+    "asvs": "V16.3.1",
+    "file": "skills/sota-code-security/rules/07-data-exposure.md",
+    "quote": "Do log (security observability, OWASP A09): authn successes/failures, authz denials, validation rejections, privilege/role changes, MFA/recovery events, admin actions — with actor, action, target, result, source IP, timestamp; ship to an append-only store with alerting on anomalies.",
+    "note": "Section '## 2'; failures are logged with their result, so a failure is distinguishable from a success."
+  }
+]

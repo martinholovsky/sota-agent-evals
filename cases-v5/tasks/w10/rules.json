@@ -1,1 +1,9 @@
-[{"test": "test_constant_activity_does_not_keep_a_session_alive_forever", "asvs": "V7.3.2"}]
+[
+  {
+    "test": "test_constant_activity_does_not_keep_a_session_alive_forever",
+    "asvs": "V7.3.2",
+    "file": "skills/sota-code-security/rules/17-sessions-and-tokens.md",
+    "quote": "Expiry: idle timeout AND absolute timeout (e.g. 4–8h for a full-day office app) regardless of activity (CWE-613), both computed from **server-side timestamps**, never from a time the client sends or a counter the client holds.",
+    "note": "Section '## 2. Session management'; 'absolute timeout ... regardless of activity'."
+  }
+]

@@ -1,1 +1,9 @@
-[{"test": "test_lookup_returns_no_credential_material", "asvs": "V15.3.1"}]
+[
+  {
+    "test": "test_lookup_returns_no_credential_material",
+    "asvs": "V15.3.1",
+    "file": "skills/sota-code-security/rules/07-data-exposure.md",
+    "quote": "Response DTOs are allowlists of what leaves the service; serializing ORM entities directly leaks every added-later column (password hashes, internal flags, soft-deleted rows).",
+    "note": "Section '## 4. Verbose APIs & over-exposure (CWE-213/200)'; bullet 'Filter at the source, shape at the edge'."
+  }
+]

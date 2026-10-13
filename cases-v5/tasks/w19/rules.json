@@ -1,1 +1,9 @@
-[{"test": "test_burst_of_coupon_checks_is_cut_off", "asvs": "V2.4.1"}]
+[
+  {
+    "test": "test_burst_of_coupon_checks_is_cut_off",
+    "asvs": "V2.4.1",
+    "file": "skills/sota-code-security/rules/19-anti-automation-and-abuse.md",
+    "quote": "you are not trying to stop every bot, you are trying to make abuse cost more than it earns — and every value-granting action needs its own ceiling, because the login rate limit does not protect the coupon endpoint.",
+    "note": "Core principle of rules/19 (anti-automation, CWE-799)."
+  }
+]

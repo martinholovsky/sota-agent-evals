@@ -1,2 +1,16 @@
-[{"test": "test_formula_trigger_characters_neutralised", "asvs": "V1.2.10"},
- {"test": "test_tab_and_nul_leading_characters_neutralised", "asvs": "V1.2.10"}]
+[
+  {
+    "test": "test_formula_trigger_characters_neutralised",
+    "asvs": "V1.2.10",
+    "file": "skills/sota-code-security/rules/01-input-injection.md",
+    "quote": "**CSV/formula injection (CWE-1236)**: cells starting `= + - @`, tab or NUL execute in spreadsheet apps on export; prefix with `'` when generating CSV/XLSX from user data, and quote every field per RFC 4180 rules 6-7 (wrap in `\"`, double inner `\"`) so a comma or quote cannot start a new cell.",
+    "note": "Section '## 11' of rules/01; covers = + - @."
+  },
+  {
+    "test": "test_tab_and_nul_leading_characters_neutralised",
+    "asvs": "V1.2.10",
+    "file": "skills/sota-code-security/rules/01-input-injection.md",
+    "quote": "**CSV/formula injection (CWE-1236)**: cells starting `= + - @`, tab or NUL execute in spreadsheet apps on export; prefix with `'` when generating CSV/XLSX from user data, and quote every field per RFC 4180 rules 6-7 (wrap in `\"`, double inner `\"`) so a comma or quote cannot start a new cell.",
+    "note": "Same sentence names tab and NUL."
+  }
+]

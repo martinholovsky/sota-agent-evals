@@ -1,1 +1,9 @@
-[{"test": "test_session_left_idle_for_a_day_needs_new_login", "asvs": "V7.3.1"}]
+[
+  {
+    "test": "test_session_left_idle_for_a_day_needs_new_login",
+    "asvs": "V7.3.1",
+    "file": "skills/sota-code-security/rules/17-sessions-and-tokens.md",
+    "quote": "Expiry: idle timeout AND absolute timeout (e.g. 4–8h for a full-day office app) regardless of activity (CWE-613), both computed from **server-side timestamps**, never from a time the client sends or a counter the client holds.",
+    "note": "Section '## 2. Session management'; the same bullet gives idle ranges of 2-30 minutes, well inside the test's one-day bound."
+  }
+]

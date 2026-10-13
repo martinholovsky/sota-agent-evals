@@ -1,1 +1,9 @@
-[{"test": "test_refund_events_record_who_did_it", "asvs": "V16.2.1"}]
+[
+  {
+    "test": "test_refund_events_record_who_did_it",
+    "asvs": "V16.2.1",
+    "file": "skills/sota-code-security/rules/03-authorization.md",
+    "quote": "Every admin mutation needs an immutable audit trail (actor, target, before/ after, reason) — both a compliance requirement and your insider-threat and incident-forensics control (pairs with [rules/07](07-data-exposure.md) §2 security logging).",
+    "note": "A refund is an admin-only mutation of an order; the trail must name the actor."
+  }
+]

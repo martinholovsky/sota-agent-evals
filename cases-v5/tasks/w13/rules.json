@@ -1,3 +1,23 @@
-[{"test": "test_codes_not_kept_in_recoverable_form", "asvs": "V6.5.2"},
- {"test": "test_codes_hashed_with_password_hashing_function", "asvs": "V6.5.2"},
- {"test": "test_same_code_stored_differently_each_time", "asvs": "V6.5.2"}]
+[
+  {
+    "test": "test_codes_not_kept_in_recoverable_form",
+    "asvs": "V6.5.2",
+    "file": "skills/sota-code-security/rules/02-authentication.md",
+    "quote": "Lookup secrets under 112 bits get a salted password hash (V6.5.2).",
+    "note": "Section '## 5. MFA & account recovery', in the out-of-band codes bullet. The recovery codes are 80-bit lookup secrets, so they get a salted password hash, never plaintext or a plain digest."
+  },
+  {
+    "test": "test_codes_hashed_with_password_hashing_function",
+    "asvs": "V6.5.2",
+    "file": "skills/sota-code-security/rules/02-authentication.md",
+    "quote": "Lookup secrets under 112 bits get a salted password hash (V6.5.2).",
+    "note": "80-bit recovery codes are lookup secrets under 112 bits: a salted password hash."
+  },
+  {
+    "test": "test_same_code_stored_differently_each_time",
+    "asvs": "V6.5.2",
+    "file": "skills/sota-code-security/rules/02-authentication.md",
+    "quote": "Lookup secrets under 112 bits get a salted password hash (V6.5.2).",
+    "note": "'salted': a per-entry random salt makes identical codes store differently."
+  }
+]

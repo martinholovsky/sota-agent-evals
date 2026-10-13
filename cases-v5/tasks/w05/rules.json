@@ -1,2 +1,16 @@
-[{"test": "test_customer_text_cannot_reach_object_attributes", "asvs": "V1.3.7"},
- {"test": "test_customer_text_cannot_use_format_directives", "asvs": "V1.3.7"}]
+[
+  {
+    "test": "test_customer_text_cannot_reach_object_attributes",
+    "asvs": "V1.3.7",
+    "file": "skills/sota-python/rules/05-security.md",
+    "quote": "Templates: Jinja2 with autoescape on for HTML (`select_autoescape`); never render user-controlled **template strings** (SSTI → RCE), only user data into fixed templates. Same logic for `str.format` on user-supplied format strings (`\"{0.__class__}\"` walks objects).",
+    "note": "Section '## 1' of sota-python rules/05; the task is Python and the gift message is a customer-supplied format string."
+  },
+  {
+    "test": "test_customer_text_cannot_use_format_directives",
+    "asvs": "V1.3.7",
+    "file": "skills/sota-python/rules/05-security.md",
+    "quote": "Templates: Jinja2 with autoescape on for HTML (`select_autoescape`); never render user-controlled **template strings** (SSTI → RCE), only user data into fixed templates. Same logic for `str.format` on user-supplied format strings (`\"{0.__class__}\"` walks objects).",
+    "note": "Same sentence: a user-supplied string must not be used as the str.format format string, which is what lets it drive format specs such as a padding width."
+  }
+]

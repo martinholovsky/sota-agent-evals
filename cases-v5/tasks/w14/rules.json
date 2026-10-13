@@ -1,2 +1,16 @@
-[{"test": "test_restore_does_not_call_what_the_string_names", "asvs": "V1.5.2"},
- {"test": "test_restore_does_not_build_foreign_types", "asvs": "V1.5.2"}]
+[
+  {
+    "test": "test_restore_does_not_call_what_the_string_names",
+    "asvs": "V1.5.2",
+    "file": "skills/sota-code-security/rules/01-input-injection.md",
+    "quote": "**Never deserialize untrusted data with native object serializers**: Python `pickle`/`PyYAML yaml.load`, Java `ObjectInputStream`/XMLDecoder, PHP `unserialize`, Ruby `Marshal`, .NET `BinaryFormatter` (throws on use since .NET 9 for this reason).",
+    "note": "Section '## 8. Unsafe deserialization (CWE-502)'; the saved-cart string comes back from the customer."
+  },
+  {
+    "test": "test_restore_does_not_build_foreign_types",
+    "asvs": "V1.5.2",
+    "file": "skills/sota-code-security/rules/01-input-injection.md",
+    "quote": "Use data-only formats: JSON, protobuf, msgpack — then validate against a schema and map to explicit DTOs.",
+    "note": "Section '## 8. Unsafe deserialization (CWE-502)'; mapping to explicit DTOs builds only cart types."
+  }
+]

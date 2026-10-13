@@ -1,3 +1,23 @@
-[{"test": "test_raw_html_is_not_rendered_as_markup", "asvs": "V1.3.5"},
- {"test": "test_links_cannot_run_script", "asvs": "V1.3.5"},
- {"test": "test_link_url_cannot_add_attributes", "asvs": "V1.3.5"}]
+[
+  {
+    "test": "test_raw_html_is_not_rendered_as_markup",
+    "asvs": "V1.3.5",
+    "file": "skills/sota-code-security/rules/05-web-security.md",
+    "quote": "Markdown, BBCode, wiki markup and user CSS are not inert: render, then sanitize the *output HTML*, with the renderer's raw-HTML passthrough off and link/image schemes allowlisted.",
+    "note": "Section '## 1. XSS', bullet 'Every user markup format goes through it.'; raw-HTML passthrough off."
+  },
+  {
+    "test": "test_links_cannot_run_script",
+    "asvs": "V1.3.5",
+    "file": "skills/sota-code-security/rules/05-web-security.md",
+    "quote": "Markdown, BBCode, wiki markup and user CSS are not inert: render, then sanitize the *output HTML*, with the renderer's raw-HTML passthrough off and link/image schemes allowlisted.",
+    "note": "Same sentence: link schemes allowlisted."
+  },
+  {
+    "test": "test_link_url_cannot_add_attributes",
+    "asvs": "V1.3.5",
+    "file": "skills/sota-code-security/rules/05-web-security.md",
+    "quote": "HTML attribute → quote the attribute AND entity-encode; unquoted attributes are injectable via whitespace.",
+    "note": "Section '## 1. XSS — context-aware output encoding'; the link URL is written into the href attribute."
+  }
+]

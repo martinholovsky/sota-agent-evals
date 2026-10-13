@@ -1,1 +1,9 @@
-[{"test": "test_login_codes_have_at_least_20_bits_of_entropy", "asvs": "V6.5.4"}]
+[
+  {
+    "test": "test_login_codes_have_at_least_20_bits_of_entropy",
+    "asvs": "V6.5.4",
+    "file": "skills/sota-code-security/rules/02-authentication.md",
+    "quote": "**SMS, email and other out-of-band codes**: CSPRNG, ≥ 20 bits (6 digits; 8 where usable), ≤ 10 min, single-use, bound to the login or transaction that asked for them (ASVS 5.0 V6.6.2), never logged, hashed at rest (against log and brief DB exposure, not offline cracking).",
+    "note": "Section '## 5. MFA & account recovery'; an emailed login code is an out-of-band code: CSPRNG, at least 20 bits."
+  }
+]

@@ -115,6 +115,29 @@ fixed and 8 passed as written, with two concerns left open:
 
 Citations come next and must not edit `tasks/`; see "Spec read, freeze, then citation".
 
+## Citation (after the freeze)
+
+The citation pass ran against SOTA-skills `4a5fee40` (v1.49.1). Of 32 rule tests, **30 are cited
+and 2 are uncited**: both w02 tests, a partial card number in an API response. The only library
+sentence that names that requirement lets the full value reach the client and masks it in the UI.
+Counted from the `rules.json` files; the agent's own report said "31 / 1", and its table
+contradicted that. `build.py --sota-root … --verify --cited` reports 0 of 20 tasks with problems,
+re-run independently. The diff touches only `tasks/*/rules.json`, plus the rebuilt `cases.jsonl`.
+No test was edited.
+
+**Weak citations, flagged for a sensitivity cut, not dropped:**
+
+- **w01 (both tests):** the quote sits under the Cookies heading.
+- **w15 (both tests):** a general imperative from a bullet about one identity provider's JWTs.
+- **w18:** an Audit-checklist question rather than a body rule.
+
+**This set is out-of-sample for the trigger table, NOT for library coverage.** On 2026-09-24
+SOTA-skills mapped every ASVS 5.0 requirement against its rules and filled gaps, and 7 of the 30
+quotes name an ASVS id outright. So the uncited share (2/32) does **not** estimate how much of an
+unseen standard the library covers. This retracts that "reported, with no verdict" use of it in
+"How the set is scored". The selection and authoring were still blind to the library, and neither
+could have been fitted to the router's table.
+
 ## Deviations
 
 1. **Context every subagent received.** The harness injected the operator's global CLAUDE.md, this

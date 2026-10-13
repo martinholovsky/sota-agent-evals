@@ -1,1 +1,9 @@
-[{"test": "test_admin_response_gives_no_way_to_set_or_learn_the_password", "asvs": "V6.4.6"}]
+[
+  {
+    "test": "test_admin_response_gives_no_way_to_set_or_learn_the_password",
+    "asvs": "V6.4.6",
+    "file": "skills/sota-code-security/rules/03-authorization.md",
+    "quote": "Support and admin staff may *start* a user's password reset (the user receives the normal reset link), but never set, choose or see the new password; a \"set password\" field in an admin tool means staff know a credential they could later use as that user.",
+    "note": "Handing the admin the reset code would let the admin set the password; the code goes to the user."
+  }
+]

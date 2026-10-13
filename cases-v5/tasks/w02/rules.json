@@ -1,2 +1,12 @@
-[{"test": "test_save_response_shows_only_part_of_number", "asvs": "V14.2.6"},
- {"test": "test_listing_shows_only_part_of_number", "asvs": "V14.2.6"}]
+[
+  {
+    "test": "test_save_response_shows_only_part_of_number",
+    "asvs": "V14.2.6",
+    "uncited": "Searched skills/sota-*/rules/[0-9][0-9]-*.md (/usr/bin/grep -niE; positive control 'pickle' hit 3) for '\\bPAN\\b', 'card number|last (four|4)|first six|BIN', 'mask(ed|ing)? .. (card|number|display)|truncat.. (PAN|card)', 'when displayed|last four', 'V14\\.2\\.6', 'PCI DSS..mask'. Opened sota-code-security/rules/07-data-exposure.md §4-5, sota-code-security/rules/04-cryptography.md §4, sota-privacy-compliance/rules/02-privacy-by-design.md §1 and rules/04 §4 (PCI), sota-mobile/rules/04-security.md §4.13. None requires an API response to carry only a partial card number: rules/07 §5 (the V14.2.6 sentence) explicitly allows the full value to reach the client and masks it in the UI; rules/07 §5 'truncate (last-4)' and rules/04 'truncation (last-4 of PAN)' are about what to STORE, 'where the product allows'; PCI 'Never store' is storage; the 'minimal projection' corollary is about fields, not truncating a field's value; sota-mobile §4.13 masks in a mobile UI only."
+  },
+  {
+    "test": "test_listing_shows_only_part_of_number",
+    "asvs": "V14.2.6",
+    "uncited": "Searched skills/sota-*/rules/[0-9][0-9]-*.md (/usr/bin/grep -niE; positive control 'pickle' hit 3) for '\\bPAN\\b', 'card number|last (four|4)|first six|BIN', 'mask(ed|ing)? .. (card|number|display)|truncat.. (PAN|card)', 'when displayed|last four', 'V14\\.2\\.6', 'PCI DSS..mask'. Opened sota-code-security/rules/07-data-exposure.md §4-5, sota-code-security/rules/04-cryptography.md §4, sota-privacy-compliance/rules/02-privacy-by-design.md §1 and rules/04 §4 (PCI), sota-mobile/rules/04-security.md §4.13. None requires an API response to carry only a partial card number: rules/07 §5 (the V14.2.6 sentence) explicitly allows the full value to reach the client and masks it in the UI; rules/07 §5 'truncate (last-4)' and rules/04 'truncation (last-4 of PAN)' are about what to STORE, 'where the product allows'; PCI 'Never store' is storage; the 'minimal projection' corollary is about fields, not truncating a field's value; sota-mobile §4.13 masks in a mobile UI only."
+  }
+]
