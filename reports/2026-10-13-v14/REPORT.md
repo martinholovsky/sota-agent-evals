@@ -122,3 +122,10 @@ tokens and $2.50 per million cache-write tokens, with a largest residual of $0.0
 Not tested here: whether sending only the named section, or narrowing those two triggers, would
 keep the reach at lower cost. On 2026-10-14 the operator decided against further paid runs, so
 no arm measures that.
+
+**Correction 2026-10-14 (to the addendum above).** "Because the hook's text asks for a full read"
+is incomplete. The router's table, also in the treatment arm, says "read the file in full" too,
+and it carries the same two trigger rows (SOTA-skills `4a5fee40`, `skills/sota/SKILL.md` lines
+214, 225 and 229). So both mechanisms ask for whole files and name those two files. These runs
+cannot separate the hook's share from the table's, as the Results section already says for the
+outcome.
