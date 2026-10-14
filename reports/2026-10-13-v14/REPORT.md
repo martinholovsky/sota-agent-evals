@@ -90,3 +90,35 @@ recorded $0.72), run **$11.42**. v14 total ≈ $12.3.
 ## Deviations
 
 None. All 20 cases have a valid row.
+
+## Addendum 2026-10-14: where the extra cost goes (descriptive, no model calls)
+
+Reproduce with `python3 reports/2026-10-13-v14/tools/cost.py results/cal-v5-2026-10-13
+results/v14-2026-10-13` (the transcripts are local and not committed). Prices fitted to every
+run's SDK cost by least squares: $10 per million output tokens, $0.20 per million cache-read
+tokens and $2.50 per million cache-write tokens, with a largest residual of $0.00001.
+
+| | control | shipped default | added |
+|---|---|---|---|
+| output | $1.91 | $2.22 | +$0.31 |
+| cache write (new context) | $3.51 | $5.19 | +$1.68 |
+| cache read (context re-sent each turn) | $2.83 | $4.01 | +$1.18 |
+| turns | 410 | 479 | +17% |
+| Reads of rules files | 13 | 65 | the harness's `depth.rules_read` agrees |
+| characters those Reads returned | 392,489 | 1,903,815 | about 4.9× |
+| share from a file the case cites | 49% | 20% | |
+
+- About 90% of the added cost is input context, and nearly all of that context is rules-file text.
+  The hook's own messages are a small share.
+- Agents read whole files, about 29k characters each, because the hook's text asks for a full
+  read of each named file.
+- Two triggers account for most of the namings: "decides who may do what" named the
+  authorization file (`sota-code-security` rules/03) in 19 of 20 runs, and "logs, returns errors,
+  or returns records about people" named the data-exposure file (rules/07) in 16. Which keyword
+  in each pattern matched was not recorded.
+- Reach did not need that volume: 80% of the rules text the treatment read came from files no
+  test in its case cites.
+
+Not tested here: whether sending only the named section, or narrowing those two triggers, would
+keep the reach at lower cost. On 2026-10-14 the operator decided against further paid runs, so
+no arm measures that.
