@@ -43,6 +43,7 @@ class Arm:
     named_rules: bool = False  # the prompt names the case's cited rules files (v7; runner.prompt_for)
     code_hook: bool = False    # scripts/code-rules-hook.py as a PostToolUse hook on Edit|Write|MultiEdit (v9)
     linked_table: bool = False  # that script's --table appended to the run's sota-python/SKILL.md (v9)
+    pressure: bool = False     # the prompt ends with runner.PRESSURE, a competing user instruction (v15)
 
 
 ARMS = {
@@ -90,6 +91,14 @@ ARMS = {
     # hook, as the plugin registers both (and install.sh offers the hook with a default of yes). Same
     # install as `installed+apply`; the name says which root it needs, and cli refuses it on any other.
     "installed+table+code": Arm("installed+table+code", library=True, hook=False, routing=True, code_hook=True),
+    # v15 (2026-10-17): v14's two arms with ONE sentence of ordinary competing pressure appended to
+    # every case prompt (runner.PRESSURE). Every lift before 2026-09-01 was measured under a neutral
+    # prompt; SOTA-skills' API harness found the lift grows under pressure (+0.509). Each runs from
+    # the same root as its unpressured twin.
+    "installed+links+pressure": Arm("installed+links+pressure", library=True, hook=False, routing=True,
+                                    pressure=True),
+    "installed+table+code+pressure": Arm("installed+table+code+pressure", library=True, hook=False,
+                                         routing=True, code_hook=True, pressure=True),
 }
 
 LINKED_SKILL = "sota-python"

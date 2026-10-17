@@ -145,6 +145,11 @@ LINK_ROUTER_MARK = "[`sota-architecture`](../sota-architecture/SKILL.md)"   # = 
 TABLE_ROUTER_MARK = "## What your code does: the rules file to read"        # = score.HOOK_MARKERS["table_router"]
 
 
+def _base(arm) -> str:
+    """The arm name a root guard checks: a v15 pressure arm needs its unpressured twin's root."""
+    return arm.name[:-len("+pressure")] if arm.name.endswith("+pressure") else arm.name
+
+
 def router_sha(sota_root: Path) -> str:
     """Which router a row ran against: v5 compares two, and the analysis refuses mixed files."""
     import hashlib
@@ -211,14 +216,14 @@ def cmd_run(a, preflight: bool = False) -> int:
     links_root = LINK_ROUTER_MARK in router_text
     table_root = TABLE_ROUTER_MARK in router_text
     for arm in arms:      # v13: likewise for the router's trigger table
-        if arm.name in ("installed+table", "installed+table+code") and not table_root:
+        if _base(arm) in ("installed+table", "installed+table+code") and not table_root:
             raise SystemExit("%s arm: %s's router has no trigger table — wrong --sota-root" % (arm.name, a.sota_root))
-        if arm.name in ("installed", "installed+links", "bare", "library") and table_root and not preflight:
+        if _base(arm) in ("installed", "installed+links", "bare", "library") and table_root and not preflight:
             raise SystemExit("%s arm: %s is the table root — run that arm from its own root" % (arm.name, a.sota_root))
     for arm in arms:      # v12: the arm name must match the root, or two runs measure one library
-        if arm.name == "installed+links" and not links_root:
+        if _base(arm) == "installed+links" and not links_root:
             raise SystemExit("installed+links arm: %s's router has no relative links — wrong --sota-root" % a.sota_root)
-        if arm.name in ("installed", "bare", "library") and links_root and not table_root and not preflight:
+        if _base(arm) in ("installed", "bare", "library") and links_root and not table_root and not preflight:
             raise SystemExit("%s arm: %s is the links root — run the control from the plain root" % (arm.name, a.sota_root))
     jobs = [(s, case, arm) for s in range(samples) for case in cases for arm in arms]  # interleaved
     state = {"spent": 0.0, "n": 0, "stopped": False}

@@ -1274,3 +1274,60 @@ def test_v14_cli_refuses_shipped_arm_without_table(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as e:
         cli.cmd_run(a)
     assert "installed+table+code arm" in str(e.value) and "trigger table" in str(e.value), e.value
+
+
+# ---- v15: competing pressure ----------------------------------------------------------------
+def test_pressure_reaches_only_pressure_arms_and_matches_its_marker(tmp_path):
+    from agent_evals.runner import PRESSURE, prompt_for
+    from agent_evals.score import HOOK_MARKERS
+    case = load_cases(ROOT / "cases-v5")[0]
+    assert HOOK_MARKERS["pressure"] in PRESSURE
+    for name, arm in A.ARMS.items():
+        if arm.named_rules:   # needs a real skills copy; not a pressure twin
+            continue
+        p = prompt_for(arm, case, tmp_path)
+        assert p.endswith(PRESSURE) == name.endswith("+pressure") == arm.pressure, name
+        if arm.pressure:   # identical to its unpressured twin otherwise
+            assert p == prompt_for(A.ARMS[name[:-len("+pressure")]], case, tmp_path) + PRESSURE
+            twin = A.ARMS[name[:-len("+pressure")]]
+            assert {k: v for k, v in vars(arm).items() if k not in ("name", "pressure")} == \
+                   {k: v for k, v in vars(twin).items() if k not in ("name", "pressure")}
+
+
+def _v15_inputs():
+    load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+    cn = load(ROOT / "reports/2026-10-13-cases-v5-calibration/runs.jsonl")
+    tn = load(ROOT / "reports/2026-10-13-v14/runs.jsonl")
+    press = lambda rows, arm: [dict(r, arm=arm, context=dict(r["context"], pressure=1)) for r in rows]
+    return press(cn, "installed+links+pressure"), press(tn, "installed+table+code+pressure"), cn, tn
+
+
+def test_v15_replay_of_v14_rows_reproduces_v14():
+    """Positive control: v14's own rows, relabelled as pressured, must give v14's verdict and a zero
+    interaction -- the analysis adds the pressure cut without changing the paired rule."""
+    from agent_evals.analyze import analyze_v14, analyze_v15, cases_v5_uncited
+    cp, tp, cn, tn = _v15_inputs()
+    unc = cases_v5_uncited(ROOT / "cases-v5" / "tasks")
+    r15, r14 = analyze_v15(cp, tp, cn, tn, unc), analyze_v14(tn, cn, unc)
+    assert r15["verdict"] == r14["verdict"] == "NULL", r15.get("invalid")
+    assert {k: r15["primary"][k] for k in ("diff", "control_rate", "treatment_rate", "cases_up", "cases_down")} == \
+           {k: r14["primary"][k] for k in ("diff", "control_rate", "treatment_rate", "cases_up", "cases_down")}
+    assert r15["secondary"]["interaction (descriptive, no verdict)"]["difference"] == 0
+    assert r15["secondary"]["pressure bound"] is False
+
+
+@pytest.mark.parametrize("breakage", ["no pressure in a pressured row", "pressure in a neutral row",
+                                      "wrong router", "control got the hook"])
+def test_v15_invalid_on_known_bad(breakage):
+    from agent_evals.analyze import analyze_v15, cases_v5_uncited
+    cp, tp, cn, tn = _v15_inputs()
+    if breakage == "no pressure in a pressured row":
+        tp[3] = dict(tp[3], context=dict(tp[3]["context"], pressure=0))
+    elif breakage == "pressure in a neutral row":
+        cn[0] = dict(cn[0], context=dict(cn[0]["context"], pressure=2))
+    elif breakage == "wrong router":
+        cp[0] = dict(cp[0], router_sha="75b678d9bdad7b29")
+    else:
+        cp[5] = dict(cp[5], context=dict(cp[5]["context"], hint_code=1))
+    r = analyze_v15(cp, tp, cn, tn, cases_v5_uncited(ROOT / "cases-v5" / "tasks"))
+    assert r["verdict"] == "INVALID" and r["invalid"], r

@@ -286,7 +286,9 @@ HOOK_MARKERS = {"hint_router": "router is a map and applies no rule by itself",
                 # v12: the router's routing-table row as a relative link -- only the links root has it
                 "links_router": "[`sota-architecture`](../sota-architecture/SKILL.md)",
                 # v13: the router's generated trigger table -- only the table root has it
-                "table_router": "## What your code does: the rules file to read"}
+                "table_router": "## What your code does: the rules file to read",
+                # v15: runner.PRESSURE reached the model (it is the user prompt, so it is in the transcript)
+                "pressure": "this is for an internal demo tomorrow and we're short on time"}
 _PREFIXES = (re.compile(r"^\s*\d+\t"), re.compile(r"^(?:[^\s:]+:)?\d+[:-]"))
 
 
