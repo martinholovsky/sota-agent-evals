@@ -7,13 +7,15 @@
 
 The API key is read from the environment only: ANTHROPIC_API_KEY, or OPENROUTER_API_KEY with
 --provider openrouter. It is never logged, and the agent's own shell
-cannot read it (CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1).
+cannot read it (CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1). Every other credential-named variable is
+removed from the environment at start and redacted from everything kept (SECRET_NAME).
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
 import json
+import re
 import shutil
 import os
 import sys
@@ -22,7 +24,7 @@ from pathlib import Path
 
 from .arms import ARMS, cleanup, parse_arms, sota_skill_names
 from .runner import RunConfig, options_for, prompt_for, run_one
-from .score import (contamination, depth, hidden_pass, rules_fingerprints, shipped_broken,
+from .score import (contamination, depth, hidden_pass, rules_fingerprints, scope, shipped_broken,
                     transcript_depth, tree_changed, unverified_done, cited_reach)
 from .workspace import load_cases
 
@@ -32,12 +34,52 @@ HERE = Path(__file__).resolve().parent.parent
 KEY_VAR = {"anthropic": "ANTHROPIC_API_KEY", "openrouter": "OPENROUTER_API_KEY"}
 
 
+# Every other credential-named variable in the operator's shell (GH_TOKEN, AWS_SESSION_TOKEN, ...)
+# reached the agent the same way, and from there `env` output lands in the kept traces. Removed at
+# start; the values are kept only to redact them from anything written (scrub_tree). Not AUTH alone:
+# SSH_AUTH_SOCK is a socket path, not a secret.
+SECRET_NAME = re.compile(r"TOKEN|SECRET|PASSW|CREDENTIAL|API_?KEY|ACCESS_?KEY|PRIVATE_?KEY", re.I)
+_SECRETS: dict[str, str] = {}
+
+
+def _strip_secret_env() -> list[str]:
+    """Pop credential-named variables from this process's environment; return their NAMES."""
+    for var in [v for v in os.environ if SECRET_NAME.search(v)]:
+        _SECRETS[var] = os.environ.pop(var)
+    return sorted(_SECRETS)
+
+
+def scrub_text(s: str) -> str:
+    for k, v in _SECRETS.items():
+        if len(v) >= 8:
+            s = s.replace(v, "[REDACTED:%s]" % k)
+    return s
+
+
+def scrub_tree(path: Path) -> int:
+    """Replace every stripped secret value (8+ chars) in the files under `path` with a marker naming
+    the variable; return how many files changed. Bytes, so a binary file is not re-encoded."""
+    vals = [(v.encode(), ("[REDACTED:%s]" % k).encode()) for k, v in _SECRETS.items() if len(v) >= 8]
+    files = [path] if path.is_file() else [p for p in path.rglob("*") if p.is_file()] if path.exists() else []
+    n = 0
+    for p in files if vals else []:
+        b = p.read_bytes()
+        s = b
+        for v, mark in vals:
+            s = s.replace(v, mark)
+        if s != b:
+            p.write_bytes(s)
+            n += 1
+    return n
+
+
 def _key(required: bool, provider: str = "anthropic") -> str:
     """Read the key, then REMOVE it from this process's environment: the SDK merges its env on
     top of the inherited one, so a key left here would reach the agent's shell. Claude Code's
     subprocess scrub covers the variable it is handed, not arbitrary ones like this."""
+    _strip_secret_env()
     var = KEY_VAR[provider]
-    k = os.environ.pop(var, "")
+    k = _SECRETS.get(var) or os.environ.pop(var, "")
     if required and not k:
         raise SystemExit("%s is not set — refusing to start (no partial runs)" % var)
     return k or "dry-run-no-key"
@@ -120,6 +162,7 @@ def _row(arm, case, sample, ws, tr, a, sota_skills, tdir=None, fp=None) -> dict:
         "tree_changed": changed,
         "unverified_done": unverified_done(tr.tool_calls, tr.result, changed),
         "hidden": hidden,
+        "scope": scope(case.dir, ws),
         "contamination": contamination(arm.library, tr.init, tr.tool_calls, tr.final_text, sota_skills),
         # the hook's treatment check: it writes its ledger under .git/ when it runs at all.
         # Without this a hook that silently never registered would read as "no effect" on H1.
@@ -216,11 +259,12 @@ def cmd_run(a, preflight: bool = False) -> int:
             tdir = out / "transcripts" / ("%s__%s__%d" % (case.id, arm.name.replace("+", "_"), s))
             if (cd / "projects").is_dir():
                 await asyncio.to_thread(shutil.copytree, cd / "projects", tdir, dirs_exist_ok=True)
+                await asyncio.to_thread(scrub_tree, tdir)
             row = await asyncio.to_thread(_row, arm, case, s, ws, tr, a, sota_skills, tdir, fp)
             async with lock:
                 (out / "traces" / ("%s__%s__%d.json" % (case.id, arm.name.replace("+", "_"), s))).write_text(
-                    json.dumps(tr.__dict__, default=str, indent=1))
-                f.write(json.dumps(row, default=str) + "\n"); f.flush()
+                    scrub_text(json.dumps(tr.__dict__, default=str, indent=1)))
+                f.write(scrub_text(json.dumps(row, default=str)) + "\n"); f.flush()
                 state["spent"] += (tr.result.get("total_cost_usd") or 0.0); state["n"] += 1
                 print("[%3d/%d] %-6s %-13s s%d hidden=%s unverified_done=%s $%.3f %s" % (
                     state["n"], len(jobs), case.id, arm.name, s, row["hidden"].get("ok"),
@@ -231,6 +275,7 @@ def cmd_run(a, preflight: bool = False) -> int:
             keep = out / "workspaces" / ("%s__%s__%d" % (case.id, arm.name.replace("+", "_"), s))
             await asyncio.to_thread(shutil.copytree, ws, keep, dirs_exist_ok=True,
                                     ignore=shutil.ignore_patterns(".git"))
+            await asyncio.to_thread(scrub_tree, keep)
             cleanup(ws, cd)
 
     async def all_jobs(f):
