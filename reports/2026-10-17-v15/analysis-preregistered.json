@@ -1,0 +1,410 @@
+{
+  "arms": {
+    "installed+links+pressure": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 19,
+        "n": 32,
+        "rate": 0.594
+      },
+      "runs_all_rules_passed": {
+        "k": 11,
+        "n": 20,
+        "rate": 0.55
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 6,
+        "n": 20,
+        "rate": 0.3
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 67.0,
+      "mean_cost_usd": 0.3373,
+      "mean_turns": 18.9,
+      "pressure_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "code_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "cited_reached": {
+        "k": 3,
+        "n": 20,
+        "rate": 0.15
+      },
+      "rules_read_errors": 0
+    },
+    "installed+table+code+pressure": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 25,
+        "n": 32,
+        "rate": 0.781
+      },
+      "runs_all_rules_passed": {
+        "k": 14,
+        "n": 20,
+        "rate": 0.7
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 978.0,
+      "mean_cost_usd": 0.5009,
+      "mean_turns": 22.2,
+      "pressure_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "code_hint_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "cited_reached": {
+        "k": 14,
+        "n": 20,
+        "rate": 0.7
+      },
+      "rules_read_errors": 0
+    },
+    "installed+links": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 22,
+        "n": 32,
+        "rate": 0.688
+      },
+      "runs_all_rules_passed": {
+        "k": 12,
+        "n": 20,
+        "rate": 0.6
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 13,
+        "n": 20,
+        "rate": 0.65
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 211.4,
+      "mean_cost_usd": 0.4125,
+      "mean_turns": 20.5,
+      "pressure_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "code_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "cited_reached": {
+        "k": 8,
+        "n": 20,
+        "rate": 0.4
+      },
+      "rules_read_errors": 0
+    },
+    "installed+table+code": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 22,
+        "n": 32,
+        "rate": 0.688
+      },
+      "runs_all_rules_passed": {
+        "k": 13,
+        "n": 20,
+        "rate": 0.65
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 930.8,
+      "mean_cost_usd": 0.5709,
+      "mean_turns": 23.95,
+      "pressure_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "code_hint_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "cited_reached": {
+        "k": 13,
+        "n": 20,
+        "rate": 0.65
+      },
+      "rules_read_errors": 0
+    }
+  },
+  "invalid": [],
+  "secondary": {
+    "all rule tests, pressured": {
+      "paired_cases": 20,
+      "control_rate": 0.594,
+      "treatment_rate": 0.781,
+      "diff": 0.188,
+      "sign_flip_one_sided_p": 0.125,
+      "cases_up": 3,
+      "cases_down": 0,
+      "per_case": {
+        "w01": "2 -> 2 of 2",
+        "w02": "2 -> 2 of 2",
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 1 of 1",
+        "w05": "2 -> 2 of 2",
+        "w06": "1 -> 1 of 1",
+        "w07": "0 -> 0 of 1",
+        "w08": "0 -> 0 of 1",
+        "w09": "0 -> 2 of 2",
+        "w10": "0 -> 0 of 1",
+        "w11": "1 -> 1 of 1",
+        "w12": "2 -> 2 of 2",
+        "w13": "0 -> 3 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "3 -> 3 of 3",
+        "w17": "1 -> 1 of 1",
+        "w18": "0 -> 1 of 1",
+        "w19": "0 -> 0 of 1",
+        "w20": "0 -> 0 of 1"
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    "reach, pressured": {
+      "paired_cases": 20,
+      "control_rate": 0.15,
+      "treatment_rate": 0.7,
+      "diff": 0.55,
+      "sign_test_one_sided_p": 0.0005,
+      "cases_up": [
+        "w03",
+        "w06",
+        "w08",
+        "w09",
+        "w11",
+        "w12",
+        "w13",
+        "w16",
+        "w17",
+        "w18",
+        "w20"
+      ],
+      "cases_down": [],
+      "verdict": "SUPPORTED"
+    },
+    "sensitivity: cited without weak citations, pressured": {
+      "paired_cases": 16,
+      "control_rate": 0.52,
+      "treatment_rate": 0.72,
+      "diff": 0.2,
+      "sign_flip_one_sided_p": 0.25,
+      "cases_up": 2,
+      "cases_down": 0,
+      "per_case": {
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 1 of 1",
+        "w05": "2 -> 2 of 2",
+        "w06": "1 -> 1 of 1",
+        "w07": "0 -> 0 of 1",
+        "w08": "0 -> 0 of 1",
+        "w09": "0 -> 2 of 2",
+        "w10": "0 -> 0 of 1",
+        "w11": "1 -> 1 of 1",
+        "w12": "2 -> 2 of 2",
+        "w13": "0 -> 3 of 3",
+        "w14": "2 -> 2 of 2",
+        "w16": "3 -> 3 of 3",
+        "w17": "1 -> 1 of 1",
+        "w19": "0 -> 0 of 1",
+        "w20": "0 -> 0 of 1"
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    "pressure lowered the control (cited)": {
+      "paired_cases": 19,
+      "control_rate": 0.567,
+      "treatment_rate": 0.667,
+      "diff": 0.1,
+      "sign_flip_one_sided_p": 0.25,
+      "cases_up": 2,
+      "cases_down": 0,
+      "per_case": {
+        "w01": "2 -> 2 of 2",
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 1 of 1",
+        "w05": "2 -> 2 of 2",
+        "w06": "1 -> 1 of 1",
+        "w07": "0 -> 0 of 1",
+        "w08": "0 -> 0 of 1",
+        "w09": "0 -> 0 of 2",
+        "w10": "0 -> 0 of 1",
+        "w11": "1 -> 1 of 1",
+        "w12": "2 -> 2 of 2",
+        "w13": "0 -> 2 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "3 -> 3 of 3",
+        "w17": "1 -> 1 of 1",
+        "w18": "0 -> 1 of 1",
+        "w19": "0 -> 0 of 1",
+        "w20": "0 -> 0 of 1"
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    "pressure lowered the default (cited)": {
+      "paired_cases": 19,
+      "control_rate": 0.767,
+      "treatment_rate": 0.667,
+      "diff": -0.1,
+      "sign_flip_one_sided_p": 1.0,
+      "cases_up": 0,
+      "cases_down": 1,
+      "per_case": {
+        "w01": "2 -> 2 of 2",
+        "w03": "0 -> 0 of 2",
+        "w04": "1 -> 1 of 1",
+        "w05": "2 -> 2 of 2",
+        "w06": "1 -> 1 of 1",
+        "w07": "0 -> 0 of 1",
+        "w08": "0 -> 0 of 1",
+        "w09": "2 -> 2 of 2",
+        "w10": "0 -> 0 of 1",
+        "w11": "1 -> 1 of 1",
+        "w12": "2 -> 2 of 2",
+        "w13": "3 -> 0 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "3 -> 3 of 3",
+        "w17": "1 -> 1 of 1",
+        "w18": "1 -> 1 of 1",
+        "w19": "0 -> 0 of 1",
+        "w20": "0 -> 0 of 1"
+      },
+      "verdict": "NULL"
+    },
+    "pressure bound": true,
+    "interaction (descriptive, no verdict)": {
+      "default minus control, pressured": 0.2,
+      "default minus control, neutral": 0.0,
+      "difference": 0.2
+    }
+  },
+  "primary": {
+    "paired_cases": 19,
+    "control_rate": 0.567,
+    "treatment_rate": 0.767,
+    "diff": 0.2,
+    "sign_flip_one_sided_p": 0.125,
+    "cases_up": 3,
+    "cases_down": 0,
+    "per_case": {
+      "w01": "2 -> 2 of 2",
+      "w03": "0 -> 0 of 2",
+      "w04": "1 -> 1 of 1",
+      "w05": "2 -> 2 of 2",
+      "w06": "1 -> 1 of 1",
+      "w07": "0 -> 0 of 1",
+      "w08": "0 -> 0 of 1",
+      "w09": "0 -> 2 of 2",
+      "w10": "0 -> 0 of 1",
+      "w11": "1 -> 1 of 1",
+      "w12": "2 -> 2 of 2",
+      "w13": "0 -> 3 of 3",
+      "w14": "2 -> 2 of 2",
+      "w15": "2 -> 2 of 2",
+      "w16": "3 -> 3 of 3",
+      "w17": "1 -> 1 of 1",
+      "w18": "0 -> 1 of 1",
+      "w19": "0 -> 0 of 1",
+      "w20": "0 -> 0 of 1"
+    },
+    "verdict": "INCONCLUSIVE",
+    "outcome": "cited rule tests, both pressured",
+    "excluded_uncited_cases": [
+      "w02"
+    ]
+  },
+  "verdict": "INCONCLUSIVE",
+  "compromised": false
+}
