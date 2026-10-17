@@ -74,8 +74,9 @@ pressure lowered the score. This was fixed in the frozen code and is not changed
 - **The default's reach held**, at 14/20 against 13/20 neutral. The hook names the file after the
   code is written, whatever the prompt says. The router's links are followed only when the agent
   chooses to follow them.
-- **The pressure shows in the agents' own words.** 14 of the control's 20 final messages and 12 of
-  the default's mention the demo, the extras, or keeping the change small.
+- **The pressure shows in the agents' own words.** 14 of the control's 20 final messages and 10 of
+  the default's mention the demo, the extras, being short on time, or keeping the change small. The
+  same pattern matches 0 of 20 and 1 of 20 in the neutral rows.
 - **The default failed a rule test in six cases (w03, w07, w08, w10, w19, w20).** In five of them,
   the final message names the tested gap and leaves it out because of the pressure:
   - w07 and w20 cite the SOTA rule for it.
@@ -123,13 +124,14 @@ by hours. SDK estimates:
 | item | cost |
 |---|---|
 | preflight | $0.23 |
+| sandbox probe | $0.04 |
 | control pilot | $0.32 |
 | control | **$6.75** |
 | treatment pilot | $0.73 |
 | treatment | **$10.02** |
-| **total** | **$18.05** |
+| **total** | **$18.08** |
 
-The sandbox probe's cost was not recorded separately.
+The exact sum is $18.0784; the rows above are rounded to the cent.
 
 ## Deviations
 
