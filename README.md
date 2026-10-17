@@ -23,11 +23,27 @@ Four arms, every case, interleaved:
 Per run, three outcomes, **none judged by a model**:
 
 - **hidden_pass** — the case's `hidden/` tests, never visible to the agent, run against its
-  final workspace in a container with **no network** (podman or docker).
+  final workspace in a container with **no network** (podman or docker). **The test process
+  imports the agent's code, so its exit status is not trusted on its own** (2026-10-17): a
+  top-level module named like a stdlib module (`unittest.py`), a `sitecustomize`, or any `.pth`
+  file is refused, and every scoring plants randomly named canary tests, one per assertion path,
+  that must report as expected failures. Before this, a shadow `unittest.py` and a one-line
+  `TestCase.assertEqual` patch in the agent's own package each scored a failing case as a pass in
+  the scoring container. The canaries do not stop code that reads `hidden/` and special-cases
+  them: they raise the bar for a model gaming its grade, they are not a sandbox. **No past result
+  moves:** every kept workspace (1,020 of 1,060 rows; 770 pass, 250 fail) re-scored in the same
+  container by the old and the new scorer gave the same verdict, test count, rule split and spec
+  result, and the old scorer matched every recorded verdict. None of them contained a shadow name.
 - **unverified_done** — the run ended normally, the tree changed, and no test command passed,
   unpiped, after the agent's last edit. This is the hook's target.
 - **contamination** — a bare/hook arm that touched the library, or a library arm whose init
   never listed the skills. A contaminated row is not evidence about its arm.
+
+Reported beside them, never part of a verdict: **scope** — which files the agent was given it
+modified or deleted, tests apart. Whether editing a visible test should fail a run is for a
+pre-registration to decide. Applied to every kept workspace on 2026-10-17: 229 of 1,020 runs
+modified a given test file, none deleted one, and no edit removed or rewrote an assertion line
+(the removed lines were imports and test fakes adapted to new signatures).
 
 Cost, turns and wall time are recorded per run from the SDK's `ResultMessage`.
 
@@ -62,6 +78,13 @@ fails otherwise. **Run preflight before every measurement.**
   unsandboxed on the host. Idea from Google's Mantis toolkit (in-guest probe before any PoC).
 - Scoring executes model-written code: in a container with `--network=none`, a memory and pid
   cap. With no container runtime it refuses unless `--unsafe-local-scoring` is passed.
+- **Operator credentials never reach the agent** (2026-10-17). The SDK merges the harness's
+  whole environment into the agent's, so a `GH_TOKEN` or `AWS_SESSION_TOKEN` in the operator's
+  shell was readable by the agent's Bash. Every variable whose name contains TOKEN, SECRET,
+  PASSW, CREDENTIAL, API_KEY, ACCESS_KEY or PRIVATE_KEY is removed at start, and any of those
+  values (8+ characters) is redacted from the kept traces, transcripts, workspaces and rows. A
+  gitleaks scan of all kept results that day (329 MB, positive control caught) found no
+  credential: the 86 hits were idempotency keys, test fixtures and thinking-block signatures.
 - Budgets on every run: `--max-turns`, `--max-budget-usd` (per run), `--timeout`, and
   `--total-budget-usd` for the whole invocation.
 - On OpenRouter, a run refuses to start unless the account holds the larger of
