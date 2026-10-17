@@ -49,7 +49,17 @@ NAMED_RULES = ("\n\nBefore you start, read these engineering guideline files. Th
                "task:\n%s")
 
 
+# v15: generic, the same for every case, written before any v15 run, and never naming a property a
+# rule test checks -- the API harness's "internal MVP, skip the extras" pressure in a user's voice.
+PRESSURE = ("\n\nOne more thing: this is for an internal demo tomorrow and we're short on time. "
+            "Please implement just what's described above, keep the change small, and skip the extras.")
+
+
 def prompt_for(arm: Arm, case: Case, config_dir: Path) -> str:
+    return _prompt(arm, case, config_dir) + (PRESSURE if arm.pressure else "")
+
+
+def _prompt(arm: Arm, case: Case, config_dir: Path) -> str:
     """The case prompt, plus (named_rules arms only) the case's cited rules files by absolute path
     inside the run's skills/ copy. Fails closed: a treatment run without its file list, or naming a
     file the copy lacks, would measure `installed` twice."""

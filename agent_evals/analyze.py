@@ -864,8 +864,90 @@ def analyze_v14(rows: list, control: list, uncited: tuple) -> dict:
     return out
 
 
+V15_ROUTERS = {"control": "60edc3eae536ec8c", "treatment": "75b678d9bdad7b29"}   # v14's two roots
+V15_ARMS = {"cp": "installed+links+pressure", "tp": "installed+table+code+pressure",
+            "cn": "installed+links", "tn": "installed+table+code"}
+
+
+def analyze_v15(cp: list, tp: list, cn: list, tn: list, uncited: tuple) -> dict:
+    """v15 (PRE-REGISTRATION-v15.md): v14 under competing pressure. Primary: the shipped default vs
+    the control, BOTH with runner.PRESSURE appended, on cited rule tests, v7's paired rule. The
+    unpressured rows are v14's (declared reuse) and enter only the secondaries: how far pressure
+    moved each arm, and the interaction (the default's pressured advantage minus its neutral one),
+    which is descriptive. If pressure did not lower the control's cited score, the primary still
+    reads by its rule but the file says the pressure did not bind."""
+    out = {"arms": {}, "invalid": [], "secondary": {}}
+    groups = {"cp": cp, "tp": tp, "cn": cn, "tn": tn}
+    for k, rows in groups.items():
+        stray = sorted({r["arm"] for r in rows} - {V15_ARMS[k]})
+        if stray:
+            out["invalid"].append("%s file holds unexpected arms %s" % (k, stray))
+        want = V15_ROUTERS["control" if k[0] == "c" else "treatment"]
+        shas = {r.get("router_sha") for r in rows}
+        if shas != {want}:
+            out["invalid"].append("%s rows ran on router %s, not %s" % (k, sorted(map(str, shas)), want))
+    if any(r.get("named_rules") for rows in groups.values() for r in rows):
+        out["invalid"].append("a row's prompt named rules files")
+    if any(ctx(r).get(k, 0) for rows in groups.values() for r in rows
+           for k in ("hint_router", "hint_skill", "linked_table", "hint_label")):
+        out["invalid"].append("a row received a depth-hook, index-table or label treatment")
+    if any(ctx(r).get(k, 0) for r in cp + cn for k in ("hint_code", "hint_apply", "table_router")):
+        out["invalid"].append("a control row received the treatment")
+    if any(ctx(r).get("pressure", 0) for r in cn + tn):
+        out["invalid"].append("an unpressured row carries the pressure sentence")
+    if any("cited_reached" not in ctx(r) or "table_router" not in ctx(r) for rows in groups.values() for r in rows):
+        out["invalid"].append("a row lacks the reach fields (no transcript)")
+    valid = {}
+    for k, rows in groups.items():
+        valid[k], out["arms"][V15_ARMS[k]] = _arm_stats(rows)
+        v = valid[k]
+        out["arms"][V15_ARMS[k]].update({
+            "pressure_rate": _rate(v, lambda r: ctx(r).get("pressure", 0) > 0),
+            "code_hint_rate": _rate(v, lambda r: ctx(r).get("hint_code", 0) > 0),
+            "cited_reached": _rate(v, lambda r: bool(ctx(r).get("cited_reached"))),
+            "rules_read_errors": sum(ctx(r).get("rules_read_errors", 0) for r in v)})
+        if not out["arms"][V15_ARMS[k]]["rule_tests_passed"]["n"]:
+            out["invalid"].append("%s has no valid rows" % V15_ARMS[k])
+    # the pressure is the prompt itself, so it must have reached EVERY pressured run
+    if any(not ctx(r).get("pressure", 0) for r in valid.get("cp", []) + valid.get("tp", [])):
+        out["invalid"].append("a pressured run's transcript lacks the pressure sentence")
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    rate = out["arms"][V15_ARMS["tp"]]["code_hint_rate"]["rate"] or 0
+    if rate < MANIPULATION_MIN:
+        out["primary"] = {"verdict": "MANIPULATION FAILED", "code_hint_rate": rate}
+        out["verdict"] = "MANIPULATION FAILED"
+        return out
+    keep = lambda vs, drop=uncited: [r for r in vs if r["case"] not in drop]
+    out["primary"] = dict(_paired(keep(valid["cp"]), keep(valid["tp"])), outcome="cited rule tests, both pressured",
+                          excluded_uncited_cases=list(uncited))
+    out["verdict"] = out["primary"]["verdict"]
+    sec = out["secondary"]
+    sec["all rule tests, pressured"] = _paired(valid["cp"], valid["tp"])
+    sec["reach, pressured"] = _paired_reach(valid["cp"], valid["tp"])
+    sec["sensitivity: cited without weak citations, pressured"] = _paired(
+        keep(valid["cp"], uncited + V14_WEAK), keep(valid["tp"], uncited + V14_WEAK))
+    # "treatment" = the UNPRESSURED rows, so "up" reads as "pressure lowered this arm"
+    sec["pressure lowered the control (cited)"] = _paired(keep(valid["cp"]), keep(valid["cn"]))
+    sec["pressure lowered the default (cited)"] = _paired(keep(valid["tp"]), keep(valid["tn"]))
+    sec["pressure bound"] = sec["pressure lowered the control (cited)"]["diff"] > 0
+    pressured, neutral = out["primary"], _paired(keep(valid["cn"]), keep(valid["tn"]))
+    sec["interaction (descriptive, no verdict)"] = {
+        "default minus control, pressured": pressured["diff"], "default minus control, neutral": neutral["diff"],
+        "difference": round(pressured["diff"] - neutral["diff"], 3)}
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in out["arms"].values())
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--v15" in args:     # analyze --v15 <ctl-pressure runs> <default-pressure runs> <cal-v5 runs> <v14 runs> <cases-v5/tasks>
+        a = [x for x in args if x != "--v15"]
+        load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v15(load(a[0]), load(a[1]), load(a[2]), load(a[3]), cases_v5_uncited(a[4])),
+                         indent=2, default=str))
+        return
     if "--annotate-reach" in args:   # analyze --annotate-reach <runs.jsonl> <results-dir> <cases.jsonl>
         p, rd, cp = [a for a in args if a != "--annotate-reach"]
         rows = [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
