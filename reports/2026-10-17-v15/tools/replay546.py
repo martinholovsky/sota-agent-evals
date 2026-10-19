@@ -11,8 +11,12 @@ Usage (from the repo root):
 2. For each rules-file Read, finds the sections named for that file in the same transcript
    (hook messages; optionally the router's "What your code does" table at the commit) and
    the share of the file they hold. A file with no section named stays whole.
-3. Prices the text: one cache write plus one cache read per later API call. Characters per
-   token is NOT measured here; the result is printed for 3.0, 3.5 and 4.0.
+3. Prices the text: one cache write plus one cache read per later API call, at a characters
+   per token ratio MEASURED from the same transcripts (measure_cpt): for every API call whose
+   new content since the previous call is >= 90% rules-file text and >= 20k characters, the
+   new characters over that call's cache_creation_input_tokens. Cache creation also carries
+   the previous turn's output, so the ratio is a slight underestimate. 3.0 and 4.0 are
+   printed beside it only to show what the 2026-10-19 first version assumed.
 
 What it cannot say: whether rule tests hold with less text, or whether agents would read
 more (re-reads, follow-ups) once given only a section. Both make the saving an upper bound.
@@ -142,6 +146,39 @@ def reads(root):
     return out
 
 
+def measure_cpt(root):
+    """Pooled characters per token over calls whose new content is mostly rules-file text."""
+    chars = toks = n = 0
+    for f in glob.glob(os.path.join(root, "transcripts", "*", "**", "*.jsonl"), recursive=True):
+        lines = [json.loads(line) for line in open(f)]
+        calls, seen = [], set()
+        for i, o in enumerate(lines):
+            m = o.get("message") or {}
+            if o.get("type") == "assistant" and m.get("id") and m["id"] not in seen:
+                seen.add(m["id"])
+                calls.append((i, m.get("usage") or {}))
+        ids = set()
+        for (a, _), (b, usage) in zip(calls, calls[1:]):
+            total = rules = 0
+            for o in lines[a:b]:
+                content = (o.get("message") or {}).get("content")
+                for c in content if isinstance(content, list) else []:
+                    if c.get("type") == "tool_result":
+                        size = len("".join(strings(c.get("content"))))
+                    else:
+                        size = len("".join(strings(c.get("text") or c.get("input") or "")))
+                    if (c.get("type") == "tool_use" and c.get("name") == "Read"
+                            and "/rules/" in c["input"].get("file_path", "")):
+                        ids.add(c["id"])
+                    if c.get("type") == "tool_result" and c.get("tool_use_id") in ids:
+                        rules += size
+                    total += size
+            cc = usage.get("cache_creation_input_tokens", 0)
+            if cc and rules >= 20000 and rules >= 0.9 * total:
+                chars, toks, n = chars + total, toks + cc, n + 1
+    return chars / toks, n
+
+
 def main():
     root, repo, sha = sys.argv[1:4]
     if not re.fullmatch(r"[0-9a-f]{7,40}", sha):   # reaches git argv; no '-' option
@@ -169,6 +206,8 @@ def main():
         return keep / tot, s.get("audit", 0) / tot
 
     rs = reads(root)
+    cpt, ncalls = measure_cpt(root)
+    print("measured %.2f chars/token over %d API calls" % (cpt, ncalls))
     table = router_table(repo, sha)
     print("rules-file Reads %d (harness depth.rules_read %d)"
           % (len(rs), sum(r["depth"].get("rules_read", 0) for r in runs["treatment"])))
@@ -180,12 +219,12 @@ def main():
         saved_turns = sum(r[2] * r[3] * (1 - f) for r, f in zip(rs, k))
         print("\nsections named by %s: chars %s -> kept %s (%.0f%%)"
               % (label, format(full_chars, ","), format(round(kept_chars), ","), 100 * kept_chars / full_chars))
-        for cpt in (3.0, 3.5, 4.0):
-            text = (full_turns * p_read + full_chars * p_write) / cpt
-            saved = (saved_turns * p_read + (full_chars - kept_chars) * p_write) / cpt
-            print("  @%.1f chars/token: rules text $%.2f of the $%.2f gap; saves $%.2f ($%.3f/run)"
+        for c in (cpt, 3.0, 4.0):
+            text = (full_turns * p_read + full_chars * p_write) / c
+            saved = (saved_turns * p_read + (full_chars - kept_chars) * p_write) / c
+            print("  @%.2f chars/token%s: rules text $%.2f of the $%.2f gap; saves $%.2f ($%.3f/run)"
                   " -> default $%.2f (+%.0f%% vs control)"
-                  % (cpt, text, gap, saved, saved / len(runs["treatment"]), cost["treatment"] - saved,
+                  % (c, " (measured)" if c == cpt else " (assumed)", text, gap, saved, saved / len(runs["treatment"]), cost["treatment"] - saved,
                      100 * (gap - saved) / cost["control"]))
 
     by = defaultdict(lambda: [0, 0, 0.0, 0.0])

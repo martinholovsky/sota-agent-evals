@@ -175,3 +175,25 @@ for more. The replay says nothing about whether rule tests hold with less text. 
 reading by section removes about a quarter of the overhead. The other lever, unmeasured, is how
 often the two generic triggers fire (rules/03 named in 19 of 20 v14 runs, rules/07 in 16), which changes
 reach and cannot be replayed.
+
+**Correction 2026-10-19 (to the addendum above).** Characters per token was not unmeasured: it
+can be read off these transcripts, and it is below the assumed range. For the 24 API calls whose
+new content since the previous call is at least 90% rules-file text (and at least 20,000
+characters), the new characters over that call's `cache_creation_input_tokens` pool to **2.43**
+(median 2.44, range 2.07–2.51). Cache creation also carries the previous turn's output, so the
+true ratio is slightly higher; an independent figure agrees: Anthropic's `count_tokens` put the
+router at 16,934 tokens where characters / 4 gave 10,211, about 2.4 (SOTA-skills CHANGELOG, the
+entry recording the router at 500 lines). `replay546.py` now measures
+it and prices at it. At 2.43:
+
+| | today (whole files) | replayed (section only) |
+|---|---|---|
+| default arm cost (control $6.75) | $10.02, +48% | **$8.88, +32%** (hook-named sections; $8.85, +31% with the table's) |
+| saving per run | | **$0.057** |
+| rules-file text, of the $3.27 gap | **$2.78** | |
+
+So section-only reading removes about **a third** of the overhead, not a quarter, and rules-file
+text is about 85% of the gap rather than $1.69 to $2.25 of it. The sentence "The rest is longer
+runs re-sending other context" was a mechanism nobody measured and is withdrawn; $0.49 of the gap
+is not attributed by this replay. Everything else above stands: the kept fractions, the per-file
+table and the upper-bound caveat do not depend on the ratio.
