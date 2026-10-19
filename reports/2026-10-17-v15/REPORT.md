@@ -137,3 +137,41 @@ The exact sum is $18.0784; the rows above are rounded to the cent.
 
 None. Both invocations ran on 2026-10-17, one after the other, and every case has a valid row in
 each arm.
+
+## Addendum 2026-10-19: replaying the section-only fix (SOTA-skills #546; no model calls)
+
+The question: if every rules-file Read in the default arm had returned only what the hook names
+for that file, how much of the +48% would go? Reproduce with `python3
+reports/2026-10-17-v15/tools/replay546.py results/v15-treatment-2026-10-17 <SOTA-skills checkout>
+4a5fee40` (the transcripts are local and not committed). "Section only" keeps the file's
+preamble, each section the hook names in the same transcript, and the Audit checklist, which the
+hook also asks for. A file with no section named stays whole. Each Read's text is priced as one
+cache write plus one cache read per later API call, at prices fitted to all 40 runs ($10 / $0.20
+/ $2.50 per million output / cache-read / cache-write tokens, largest residual $0.000012).
+
+| | today (whole files) | replayed (section only) |
+|---|---|---|
+| rules-file Reads | 65 (the harness's `depth.rules_read` agrees) | 65 |
+| characters returned | 2,014,300 | 1,186,767 (59%) |
+| default arm cost (control $6.75) | $10.02, +48% | $9.09 to $9.32, +35% to +38% |
+| saving per run | | $0.035 to $0.046 |
+
+The range is characters per token, which this replay does not measure: 3.0 to 4.0. Adding the
+sections the router table names changes the result by about one point (58% kept).
+
+- On this model, rules-file text accounts for $1.69 to $2.25 of the $3.27 gap. The rest is longer
+  runs re-sending other context, which no change to how files are read can touch.
+- The two generic files shrink least, because the hook names several sections in each: the
+  data-exposure file (rules/07, 15 Reads) keeps 76% and the authorization file (rules/03, 17
+  Reads) keeps 61%. Together they are 58% of the kept text.
+- Audit checklists are 36% of the kept text.
+- Three files read here had no section named and stay whole: `sota-code-security` rules/05 and
+  rules/22, and `sota-shell-scripting` rules/06 (5 of the 65 Reads).
+- Hand check: pre + §1-§3 + checklist of rules/03 is 15,538 of 25,630 characters (0.606); the
+  script gives 0.61.
+
+The saving is an upper bound: it assumes agents read exactly the named sections and never return
+for more. The replay says nothing about whether rule tests hold with less text. What it does say:
+reading by section removes about a quarter of the overhead. The other lever, unmeasured, is how
+often the two generic triggers fire (rules/03 named in 19 of 20 v14 runs, rules/07 in 16), which changes
+reach and cannot be replayed.
