@@ -940,8 +940,155 @@ def analyze_v15(cp: list, tp: list, cn: list, tn: list, uncited: tuple) -> dict:
     return out
 
 
+# v16 (PRE-REGISTRATION-v16.md): ONE arm, two roots. Control = v14's rows (declared reuse), treatment
+# = the same arm on SOTA-skills origin/main @ 3287dd07. The rows share an arm name, so the root is
+# what separates them: the router hash (both files) and, for the treatment, the whole library's digest.
+V16_ARM = "installed+table+code"
+V16_ROUTERS = {"control": "75b678d9bdad7b29", "treatment": "ad7fb225bda66ec8"}
+V16_ROOT_DIGEST = "452b21b4f34a5eb1"     # cli.root_digest() of `git archive 3287dd07` (and the guard's value)
+# Primary thresholds, on the RELATIVE pooled difference in rules lines seen per run, fixed before any
+# v16 run. 0.20 = about 186 lines a run over v14's 930.8, two-thirds of one more mid-size rules file
+# read in full; 0.05 covers the measured size-only drift (+0.9%) and the +5.1% a prompt change moved
+# depth at the same root (v14 -> v15's default arm).
+V16_MIN_REL, V16_NULL_REL, V16_ALPHA = 0.20, 0.05, 0.05
+
+
+def sign_flip_one_sided_exact(diffs: list) -> float:
+    """sign_flip_one_sided() by meet-in-the-middle, so 20 non-zero cases (2^20 sign patterns) are
+    exact and fast. Same tie rule (>= observed - 1e-9); the unit test checks both agree."""
+    from bisect import bisect_left
+    nz = [abs(d) for d in diffs if d]
+    obs = sum(diffs)
+    if not nz:
+        return 1.0
+
+    def sums(vals):
+        out = [0.0]
+        for v in vals:
+            out = [s + v for s in out] + [s - v for s in out]
+        return out
+    half = len(nz) // 2
+    left, right = sums(nz[:half]), sorted(sums(nz[half:]))
+    hits = sum(len(right) - bisect_left(right, obs - 1e-9 - s) for s in left)
+    return hits / (1 << len(nz))
+
+
+def _lines(r: dict) -> float:
+    return float(ctx(r).get("rules_lines_seen", 0))
+
+
+def _paired_depth(c_valid: list, t_valid: list) -> dict:
+    """Primary: rules lines seen per run (v6's content measure, `context.rules_lines_seen`), paired by
+    case (a case's sample mean), exact one-sided sign-flip over the per-case differences."""
+    by = []
+    for valid in (c_valid, t_valid):
+        d = defaultdict(list)
+        for r in valid:
+            d[r["case"]].append(_lines(r))
+        by.append({k: sum(v) / len(v) for k, v in d.items()})
+    paired = sorted(set(by[0]) & set(by[1]))
+    diffs = [by[1][k] - by[0][k] for k in paired]
+    ct, tt = sum(by[0][k] for k in paired), sum(by[1][k] for k in paired)
+    rel = (tt - ct) / ct if ct else None
+    p = sign_flip_one_sided_exact(diffs)
+    verdict = ("INCONCLUSIVE" if rel is None
+               else "SUPPORTED" if p < V16_ALPHA and rel >= V16_MIN_REL
+               else "NULL" if rel <= V16_NULL_REL else "INCONCLUSIVE")
+    n = len(paired)
+    return {"outcome": "rules lines seen per run", "paired_cases": n,
+            "control_mean": round(ct / n, 1) if n else None, "treatment_mean": round(tt / n, 1) if n else None,
+            "mean_diff_lines": round((tt - ct) / n, 1) if n else None,
+            "rel_diff": None if rel is None else round(rel, 4),
+            "sign_flip_one_sided_p": round(p, 4), "cases_up": sum(d > 0 for d in diffs),
+            "cases_down": sum(d < 0 for d in diffs), "cases_equal": sum(d == 0 for d in diffs),
+            "per_case": {k: "%g -> %g" % (by[0][k], by[1][k]) for k in paired},
+            "thresholds": {"alpha": V16_ALPHA, "supported_rel_min": V16_MIN_REL, "null_rel_max": V16_NULL_REL},
+            "verdict": verdict}
+
+
+def _no_verdict(res: dict) -> dict:
+    """A secondary carries no verdict (PRE-REGISTRATION-v16): its rule's label is dropped."""
+    return {k: v for k, v in res.items() if k != "verdict"}
+
+
+def analyze_v16(rows: list, control: list, uncited: tuple) -> dict:
+    """v16 (PRE-REGISTRATION-v16.md): does the shipped default on TODAY's library reach more rules-file
+    text than it did on v14's root? Control: v14's `installed+table+code` rows (root 4a5fee40, declared
+    reuse). Treatment: the same arm from origin/main @ 3287dd07. Primary: rules lines seen per run,
+    paired by case, exact one-sided sign-flip; SUPPORTED iff p < 0.05 and the relative pooled difference
+    >= 0.20, NULL iff it is <= 0.05, else INCONCLUSIVE. Secondaries carry no verdict."""
+    out = {"arms": {}, "invalid": [], "secondary": {}}
+    for label, mine in (("control", control), ("treatment", rows)):
+        stray = sorted({r["arm"] for r in mine} - {V16_ARM})
+        if stray:
+            out["invalid"].append("%s file holds unexpected arms %s" % (label, stray))
+        shas = {r.get("router_sha") for r in mine}
+        if shas != {V16_ROUTERS[label]}:
+            out["invalid"].append("%s rows ran on router %s, not %s" % (label, sorted(map(str, shas)), V16_ROUTERS[label]))
+    digests = {r.get("root_digest") for r in rows}
+    if digests != {V16_ROOT_DIGEST}:
+        out["invalid"].append("treatment rows carry root digest %s, not the pinned %s"
+                              % (sorted(map(str, digests)), V16_ROOT_DIGEST))
+    if any(r.get("named_rules") for r in rows + control):
+        out["invalid"].append("a row's prompt named rules files")
+    if any(ctx(r).get(k, 0) for r in rows + control for k in ("hint_router", "hint_skill", "linked_table", "hint_label")):
+        out["invalid"].append("a row received a depth-hook, index-table or label treatment")
+    if any(ctx(r).get("pressure", 0) for r in rows + control):
+        out["invalid"].append("a row carries the v15 pressure sentence")
+    if any(not ctx(r).get("transcripts") or any(k not in ctx(r) for k in ("rules_lines_seen", "cited_reached", "table_router"))
+           for r in rows + control if not excluded(r)):
+        out["invalid"].append("a valid row lacks a transcript or the depth/reach fields")
+    valid = {}
+    for label, mine in (("control", control), ("treatment", rows)):
+        valid[label], out["arms"][label] = _arm_stats(mine)
+        v = valid[label]
+        out["arms"][label].update({
+            "code_hint_rate": _rate(v, lambda r: ctx(r).get("hint_code", 0) > 0),
+            "table_rate": _rate(v, lambda r: ctx(r).get("table_router", 0) > 0),
+            "cited_reached": _rate(v, lambda r: bool(ctx(r).get("cited_reached"))),
+            "past_router": _rate(v, lambda r: bool((r.get("depth") or {}).get("past_router"))),
+            "mean_rules_read": round(sum((r.get("depth") or {}).get("rules_read", 0) for r in v) / len(v), 2) if v else None,
+            "rules_read_errors": sum(ctx(r).get("rules_read_errors", 0) for r in v)})
+        if not v:
+            out["invalid"].append("%s has no valid rows" % label)
+    if valid.get("control") and not sum(_lines(r) for r in valid["control"]):
+        out["invalid"].append("the control saw no rules text at all: the relative difference is undefined")
+    if out["invalid"]:
+        out["verdict"] = "INVALID"
+        return out
+    manip = {"treatment code_hint_rate": out["arms"]["treatment"]["code_hint_rate"]["rate"] or 0,
+             "control table_rate": out["arms"]["control"]["table_rate"]["rate"] or 0,
+             "treatment table_rate": out["arms"]["treatment"]["table_rate"]["rate"] or 0}
+    if any(v < MANIPULATION_MIN for v in manip.values()):
+        out["primary"] = {"verdict": "MANIPULATION FAILED", "manipulation": manip}
+        out["verdict"] = "MANIPULATION FAILED"
+        return out
+    c, t = valid["control"], valid["treatment"]
+    out["primary"] = _paired_depth(c, t)
+    out["verdict"] = out["primary"]["verdict"]
+    keep = lambda vs, drop: [r for r in vs if r["case"] not in drop]
+    sec = out["secondary"]
+    sec["cited rule tests (v14's primary)"] = dict(_no_verdict(_paired(keep(c, uncited), keep(t, uncited))),
+                                                   excluded_uncited_cases=list(uncited))
+    sec["all rule tests"] = _no_verdict(_paired(c, t))
+    sec["reach of a cited rules file"] = _no_verdict(_paired_reach(c, t))
+    sec["past_router"] = {"control": out["arms"]["control"]["past_router"], "treatment": out["arms"]["treatment"]["past_router"]}
+    sec["rules-file Reads per run (size-free)"] = {"control": out["arms"]["control"]["mean_rules_read"],
+                                                   "treatment": out["arms"]["treatment"]["mean_rules_read"]}
+    cc, tc = out["arms"]["control"]["mean_cost_usd"], out["arms"]["treatment"]["mean_cost_usd"]
+    sec["cost per run (SDK estimate)"] = {"control": cc, "treatment": tc,
+                                          "rel_diff": round((tc - cc) / cc, 3) if cc else None}
+    out["compromised"] = any((a["excluded_share"] or 0) > 0.10 for a in out["arms"].values())
+    return out
+
+
 def main(argv=None):
     args = argv or sys.argv[1:]
+    if "--v16" in args:     # analyze --v16 <v16 runs.jsonl> <v14 runs.jsonl> <cases-v5/tasks>
+        p16, p14, td = [a for a in args if a != "--v16"]
+        load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+        print(json.dumps(analyze_v16(load(p16), load(p14), cases_v5_uncited(td)), indent=2, default=str))
+        return
     if "--v15" in args:     # analyze --v15 <ctl-pressure runs> <default-pressure runs> <cal-v5 runs> <v14 runs> <cases-v5/tasks>
         a = [x for x in args if x != "--v15"]
         load = lambda p: [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]

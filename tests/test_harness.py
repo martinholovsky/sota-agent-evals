@@ -1331,3 +1331,138 @@ def test_v15_invalid_on_known_bad(breakage):
         cp[5] = dict(cp[5], context=dict(cp[5]["context"], hint_code=1))
     r = analyze_v15(cp, tp, cn, tn, cases_v5_uncited(ROOT / "cases-v5" / "tasks"))
     assert r["verdict"] == "INVALID" and r["invalid"], r
+
+
+# ---- v16: the same shipped default on today's library (depth) --------------------------------
+def _v16_rows(up=0, down=0, by=900, hook=True, table=True, base=900, all_up=0):
+    """20 cases, control sees `base` rules lines in every run. Treatment: the first `up` cases see
+    `base + by`, the next `down` see `base - by`; `all_up` is then added to every treatment case."""
+    from agent_evals.analyze import V16_ARM, V16_ROOT_DIGEST, V16_ROUTERS
+    def row(case, sha, lines, code, tb, digest=None):
+        r = {"case": case, "arm": V16_ARM, "sample": 0, "error": None, "router_sha": sha, "named_rules": [],
+             "result": {"total_cost_usd": 0.5, "num_turns": 22}, "depth": {"rules_read": 3, "past_router": True},
+             "hidden": {"ok": True, "spec_ok": True, "rules": {"passed": 1, "total": 2}},
+             "context": {"transcripts": 1, "rules_lines_seen": lines, "rules_in_context": lines > 0,
+                         "cited_reached": True, "table_router": tb, "hint_code": code, "hint_apply": code,
+                         "rules_read_errors": 0}}
+        if digest:
+            r["root_digest"] = digest
+        return r
+    cases = ["w%02d" % i for i in range(1, 21)]
+    control = [row(c, V16_ROUTERS["control"], base, 6, 1) for c in cases]
+    def lines(i):
+        return (base + by if i < up else base - by if i < up + down else base) + all_up
+    treat = [row(c, V16_ROUTERS["treatment"], lines(i), 6 if hook else 0, 1 if table else 0, V16_ROOT_DIGEST)
+             for i, c in enumerate(cases)]
+    return treat, control
+
+
+def test_v16_sign_flip_exact_matches_enumeration():
+    import random
+    from agent_evals.analyze import sign_flip_one_sided, sign_flip_one_sided_exact
+    rng = random.Random(16)
+    for n in range(0, 13):
+        for _ in range(20):
+            d = [rng.choice([0, 0, rng.randint(-900, 900), 300, -300]) for _ in range(n)]
+            assert sign_flip_one_sided_exact(d) == pytest.approx(sign_flip_one_sided(d), abs=1e-12), d
+    assert sign_flip_one_sided_exact([5] * 20) == 1 / (1 << 20)      # 2^20 patterns, exact and fast
+
+
+def test_v16_verdicts():
+    from agent_evals.analyze import analyze_v16
+    got = analyze_v16(*_v16_rows(up=6), ("w02",))       # rel 0.30, p = 1/64
+    assert got["verdict"] == "SUPPORTED", got
+    assert got["primary"]["rel_diff"] == 0.3 and got["primary"]["cases_up"] == 6 and got["primary"]["paired_cases"] == 20
+    assert not any("verdict" in v for v in got["secondary"].values() if isinstance(v, dict)), got["secondary"]
+    assert got["secondary"]["cited rule tests (v14's primary)"]["paired_cases"] == 19
+    # NULL: no change; and a uniform small rise that is "significant" but below the magnitude floor
+    assert analyze_v16(*_v16_rows(), ("w02",))["verdict"] == "NULL"
+    small = analyze_v16(*_v16_rows(all_up=40), ("w02",))      # rel 0.044, p = 2^-20
+    assert small["verdict"] == "NULL" and small["primary"]["sign_flip_one_sided_p"] < 0.001, small["primary"]
+    assert analyze_v16(*_v16_rows(down=6), ("w02",))["verdict"] == "NULL"     # depth fell
+    # INCONCLUSIVE: large but not significant (p = 1/16), and significant-sized but mixed
+    assert analyze_v16(*_v16_rows(up=4), ("w02",))["verdict"] == "INCONCLUSIVE"
+    mixed = analyze_v16(*_v16_rows(up=6, down=1), ("w02",))   # rel 0.25, p = 8/128
+    assert mixed["verdict"] == "INCONCLUSIVE", mixed["primary"]
+    assert analyze_v16(*_v16_rows(all_up=90), ("w02",))["verdict"] == "INCONCLUSIVE"   # rel 0.10
+    # MANIPULATION FAILED: the hook never spoke, or the table never reached the treatment
+    assert analyze_v16(*_v16_rows(up=6, hook=False), ("w02",))["verdict"] == "MANIPULATION FAILED"
+    assert analyze_v16(*_v16_rows(up=6, table=False), ("w02",))["verdict"] == "MANIPULATION FAILED"
+
+
+@pytest.mark.parametrize("breakage", ["treatment on v14's router", "control on today's router", "no digest",
+                                      "wrong digest", "stray arm", "named rules", "depth hook marker",
+                                      "pressure", "no transcript", "no depth field", "no reach field",
+                                      "control saw nothing"])
+def test_v16_invalid_on_known_bad(breakage):
+    from agent_evals.analyze import analyze_v16
+    t, c = _v16_rows(up=6)
+    if breakage == "treatment on v14's router":
+        t[0] = dict(t[0], router_sha="75b678d9bdad7b29")
+    elif breakage == "control on today's router":
+        c[0] = dict(c[0], router_sha="ad7fb225bda66ec8")
+    elif breakage == "no digest":
+        t[1] = {k: v for k, v in t[1].items() if k != "root_digest"}
+    elif breakage == "wrong digest":
+        t[1] = dict(t[1], root_digest="59eb17746b106339")
+    elif breakage == "stray arm":
+        t[2] = dict(t[2], arm="installed+links")
+    elif breakage == "named rules":
+        t[3] = dict(t[3], named_rules=["skills/sota-x/rules/01-a.md"])
+    elif breakage == "depth hook marker":
+        c[4] = dict(c[4], context=dict(c[4]["context"], hint_skill=1))
+    elif breakage == "pressure":
+        t[5] = dict(t[5], context=dict(t[5]["context"], pressure=1))
+    elif breakage == "no transcript":
+        t[6] = dict(t[6], context=dict(t[6]["context"], transcripts=0))
+    elif breakage == "no depth field":
+        t[7] = dict(t[7], context={k: v for k, v in t[7]["context"].items() if k != "rules_lines_seen"})
+    elif breakage == "no reach field":
+        c[8] = dict(c[8], context={k: v for k, v in c[8]["context"].items() if k != "cited_reached"})
+    else:
+        c = [dict(r, context=dict(r["context"], rules_lines_seen=0)) for r in c]
+    r = analyze_v16(t, c, ("w02",))
+    assert r["verdict"] == "INVALID" and r["invalid"], r
+
+
+def test_v16_v14_rows_against_themselves_read_null():
+    """Positive control on real rows: v14's treatment as both arms (relabelled to today's root) must
+    read NULL with a zero difference, and its control mean must be v14's 930.8 lines per run."""
+    from agent_evals.analyze import V16_ROOT_DIGEST, V16_ROUTERS, analyze_v16, cases_v5_uncited
+    v14 = [json.loads(l) for l in open(ROOT / "reports/2026-10-13-v14/runs.jsonl", encoding="utf-8") if l.strip()]
+    t = [dict(r, router_sha=V16_ROUTERS["treatment"], root_digest=V16_ROOT_DIGEST) for r in v14]
+    got = analyze_v16(t, v14, cases_v5_uncited(ROOT / "cases-v5" / "tasks"))
+    assert got["verdict"] == "NULL", got.get("invalid")
+    assert got["primary"]["rel_diff"] == 0 and got["primary"]["control_mean"] == 930.8, got["primary"]
+    assert got["arms"]["control"]["code_hint_rate"]["rate"] == 1.0 and got["arms"]["control"]["table_rate"]["rate"] == 1.0
+    assert got["secondary"]["cited rule tests (v14's primary)"]["control_rate"] == 0.667
+
+
+def test_v16_root_digest_pins_the_library_and_cli_refuses_a_moved_root(tmp_path, monkeypatch):
+    import argparse
+    from agent_evals import cli
+    r = tmp_path / "root"
+    (r / "skills" / "sota" / "rules").mkdir(parents=True)
+    (r / "skills" / "sota" / "SKILL.md").write_text("x\n" + cli.TABLE_ROUTER_MARK + "\n")
+    (r / "scripts").mkdir()
+    (r / "scripts" / "code-rules-hook.py").write_text("# hook\n")
+    d0 = cli.root_digest(r)
+    (r / "scripts" / "__pycache__").mkdir()
+    (r / "scripts" / "__pycache__" / "x.pyc").write_bytes(b"\0")
+    (r / "skills" / "sota" / "__pycache__").mkdir()
+    (r / "skills" / "sota" / "__pycache__" / "y.pyc").write_bytes(b"\0")
+    (r / "docs").mkdir(); (r / "docs" / "n.md").write_text("not read by any arm")
+    assert cli.root_digest(r) == d0                      # caches and unread files do not move it
+    (r / "skills" / "sota" / "rules" / "01-a.md").write_text("a rule")
+    d1 = cli.root_digest(r)
+    assert d1 != d0                                      # a rules file does
+    (r / "scripts" / "code-rules-hook.py").write_text("# hook v2\n")
+    assert cli.root_digest(r) != d1                      # and so does the hook
+    a = argparse.Namespace(provider="openrouter", model="m", sota_root=r, max_turns=1, max_budget_usd=1,
+                           timeout=1, out=str(tmp_path / "o"), only=None, arms="installed+table+code", samples=1,
+                           cases=ROOT / "cases-v5", expect_root_digest="0000000000000000")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "dummy-not-a-key")
+    monkeypatch.setattr(cli, "openrouter_usage", lambda *_: (_ for _ in ()).throw(AssertionError("spent before the guard")))
+    with pytest.raises(SystemExit) as e:
+        cli.cmd_run(a)
+    assert "root digest" in str(e.value) and "0000000000000000" in str(e.value), e.value
