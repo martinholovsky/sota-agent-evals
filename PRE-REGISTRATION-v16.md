@@ -198,7 +198,7 @@ together here.
 The spend of record is the OpenRouter key's usage counter, read before and after, hours apart
 (README; the counter lags). The SDK estimate is reported beside it.
 
-Credit read before the gates: **<filled by the operator's session>**.
+Credit read before the gates: **$63.87** on the account, 2026-10-27 21:46Z, read twice (filled after the run; see the [report](reports/2026-10-27-v16/REPORT.md)).
 
 The cap is $25 for gates, pilot and run together (operator, 2026-10-26). Expected spend, at v14's
 cost per run:

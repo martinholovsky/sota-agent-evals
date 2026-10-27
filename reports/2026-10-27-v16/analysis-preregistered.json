@@ -1,0 +1,263 @@
+{
+  "arms": {
+    "control": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 22,
+        "n": 32,
+        "rate": 0.688
+      },
+      "runs_all_rules_passed": {
+        "k": 13,
+        "n": 20,
+        "rate": 0.65
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 930.8,
+      "mean_cost_usd": 0.5709,
+      "mean_turns": 23.95,
+      "code_hint_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "table_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "cited_reached": {
+        "k": 13,
+        "n": 20,
+        "rate": 0.65
+      },
+      "past_router": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "mean_rules_read": 3.25,
+      "rules_read_errors": 0
+    },
+    "treatment": {
+      "rows": 20,
+      "excluded": {},
+      "excluded_share": 0.0,
+      "rule_tests_passed": {
+        "k": 25,
+        "n": 32,
+        "rate": 0.781
+      },
+      "runs_all_rules_passed": {
+        "k": 15,
+        "n": 20,
+        "rate": 0.75
+      },
+      "spec_ok": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "rules_in_context": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "hook_hint_rate": {
+        "k": 0,
+        "n": 20,
+        "rate": 0.0
+      },
+      "skill_call_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "mean_rules_lines_seen": 1054.3,
+      "mean_cost_usd": 0.6106,
+      "mean_turns": 24.4,
+      "code_hint_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "table_rate": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0
+      },
+      "cited_reached": {
+        "k": 13,
+        "n": 20,
+        "rate": 0.65
+      },
+      "past_router": {
+        "k": 18,
+        "n": 20,
+        "rate": 0.9
+      },
+      "mean_rules_read": 3.2,
+      "rules_read_errors": 0
+    }
+  },
+  "invalid": [],
+  "secondary": {
+    "cited rule tests (v14's primary)": {
+      "paired_cases": 19,
+      "control_rate": 0.667,
+      "treatment_rate": 0.767,
+      "diff": 0.1,
+      "sign_flip_one_sided_p": 0.25,
+      "cases_up": 2,
+      "cases_down": 0,
+      "per_case": {
+        "w01": "2 -> 2 of 2",
+        "w03": "0 -> 2 of 2",
+        "w04": "1 -> 1 of 1",
+        "w05": "2 -> 2 of 2",
+        "w06": "1 -> 1 of 1",
+        "w07": "0 -> 1 of 1",
+        "w08": "0 -> 0 of 1",
+        "w09": "2 -> 2 of 2",
+        "w10": "0 -> 0 of 1",
+        "w11": "1 -> 1 of 1",
+        "w12": "2 -> 2 of 2",
+        "w13": "0 -> 0 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "3 -> 3 of 3",
+        "w17": "1 -> 1 of 1",
+        "w18": "1 -> 1 of 1",
+        "w19": "0 -> 0 of 1",
+        "w20": "0 -> 0 of 1"
+      },
+      "excluded_uncited_cases": [
+        "w02"
+      ]
+    },
+    "all rule tests": {
+      "paired_cases": 20,
+      "control_rate": 0.688,
+      "treatment_rate": 0.781,
+      "diff": 0.094,
+      "sign_flip_one_sided_p": 0.25,
+      "cases_up": 2,
+      "cases_down": 0,
+      "per_case": {
+        "w01": "2 -> 2 of 2",
+        "w02": "2 -> 2 of 2",
+        "w03": "0 -> 2 of 2",
+        "w04": "1 -> 1 of 1",
+        "w05": "2 -> 2 of 2",
+        "w06": "1 -> 1 of 1",
+        "w07": "0 -> 1 of 1",
+        "w08": "0 -> 0 of 1",
+        "w09": "2 -> 2 of 2",
+        "w10": "0 -> 0 of 1",
+        "w11": "1 -> 1 of 1",
+        "w12": "2 -> 2 of 2",
+        "w13": "0 -> 0 of 3",
+        "w14": "2 -> 2 of 2",
+        "w15": "2 -> 2 of 2",
+        "w16": "3 -> 3 of 3",
+        "w17": "1 -> 1 of 1",
+        "w18": "1 -> 1 of 1",
+        "w19": "0 -> 0 of 1",
+        "w20": "0 -> 0 of 1"
+      }
+    },
+    "reach of a cited rules file": {
+      "paired_cases": 20,
+      "control_rate": 0.65,
+      "treatment_rate": 0.65,
+      "diff": 0.0,
+      "sign_test_one_sided_p": 1.0,
+      "cases_up": [],
+      "cases_down": []
+    },
+    "past_router": {
+      "control": {
+        "k": 19,
+        "n": 20,
+        "rate": 0.95
+      },
+      "treatment": {
+        "k": 18,
+        "n": 20,
+        "rate": 0.9
+      }
+    },
+    "rules-file Reads per run (size-free)": {
+      "control": 3.25,
+      "treatment": 3.2
+    },
+    "cost per run (SDK estimate)": {
+      "control": 0.5709,
+      "treatment": 0.6106,
+      "rel_diff": 0.07
+    }
+  },
+  "primary": {
+    "outcome": "rules lines seen per run",
+    "paired_cases": 20,
+    "control_mean": 930.8,
+    "treatment_mean": 1054.3,
+    "mean_diff_lines": 123.5,
+    "rel_diff": 0.1327,
+    "sign_flip_one_sided_p": 0.1069,
+    "cases_up": 13,
+    "cases_down": 6,
+    "cases_equal": 1,
+    "per_case": {
+      "w01": "1208 -> 851",
+      "w02": "1275 -> 1539",
+      "w03": "1594 -> 1119",
+      "w04": "1572 -> 1553",
+      "w05": "0 -> 0",
+      "w06": "1309 -> 1321",
+      "w07": "607 -> 612",
+      "w08": "813 -> 1539",
+      "w09": "1313 -> 1046",
+      "w10": "1208 -> 1216",
+      "w11": "1046 -> 1714",
+      "w12": "990 -> 758",
+      "w13": "601 -> 604",
+      "w14": "239 -> 570",
+      "w15": "969 -> 1256",
+      "w16": "688 -> 2031",
+      "w17": "1185 -> 1538",
+      "w18": "946 -> 758",
+      "w19": "601 -> 604",
+      "w20": "451 -> 457"
+    },
+    "thresholds": {
+      "alpha": 0.05,
+      "supported_rel_min": 0.2,
+      "null_rel_max": 0.05
+    },
+    "verdict": "INCONCLUSIVE"
+  },
+  "verdict": "INCONCLUSIVE",
+  "compromised": false
+}
