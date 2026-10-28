@@ -150,6 +150,24 @@ def _base(arm) -> str:
     return arm.name[:-len("+pressure")] if arm.name.endswith("+pressure") else arm.name
 
 
+ROOT_DIGEST_FILES = ("scripts/code-rules-hook.py", "scripts/install.sh")
+
+
+def root_digest(sota_root: Path) -> str:
+    """v16: which LIBRARY a row ran against, not only which router. sha256[:16] over every file the
+    installed arms read from the root -- all of skills/ plus the code-rules hook and the installer
+    (routing layer) -- as (relative path, bytes) in sorted order. `__pycache__` is skipped: an
+    offline replay that imports the hook writes one, and no run reads it."""
+    import hashlib
+    h = hashlib.sha256()
+    files = sorted([p for p in (sota_root / "skills").rglob("*") if p.is_file()
+                    and "__pycache__" not in p.relative_to(sota_root).parts]
+                   + [sota_root / f for f in ROOT_DIGEST_FILES if (sota_root / f).is_file()])
+    for f in files:
+        h.update(str(f.relative_to(sota_root)).encode() + b"\0" + f.read_bytes() + b"\0")
+    return h.hexdigest()[:16]
+
+
 def router_sha(sota_root: Path) -> str:
     """Which router a row ran against: v5 compares two, and the analysis refuses mixed files."""
     import hashlib
@@ -174,6 +192,8 @@ def _row(arm, case, sample, ws, tr, a, sota_skills, tdir=None, fp=None) -> dict:
         "hook_ledger": (ws / ".git" / "sota-verified-done").is_dir(),
         "depth": depth(tr.tool_calls),
         "router_sha": router_sha(a.sota_root),
+        # v16: the whole library's digest (set once per invocation in cmd_run)
+        "root_digest": getattr(a, "root_digest", None),
         # v7: the rules files this run's PROMPT named (empty for every arm but installed+named)
         "named_rules": list(case.rules_files) if arm.named_rules else [],
         # v6 primary: rules text in any tool result, read from the CLI's own transcript (kept)
@@ -225,6 +245,13 @@ def cmd_run(a, preflight: bool = False) -> int:
             raise SystemExit("installed+links arm: %s's router has no relative links — wrong --sota-root" % a.sota_root)
         if _base(arm) in ("installed", "bare", "library") and links_root and not table_root and not preflight:
             raise SystemExit("%s arm: %s is the links root — run the control from the plain root" % (arm.name, a.sota_root))
+    # v16: two rows of ONE arm name differ only by root, so the root is pinned by content, before
+    # any spend: a live checkout that moved past the pre-registered commit is refused, not measured
+    a.root_digest = root_digest(a.sota_root)
+    want = getattr(a, "expect_root_digest", None)
+    if want and a.root_digest != want:
+        raise SystemExit("--sota-root %s has root digest %s, not the pinned %s — wrong or moved root"
+                         % (a.sota_root, a.root_digest, want))
     jobs = [(s, case, arm) for s in range(samples) for case in cases for arm in arms]  # interleaved
     state = {"spent": 0.0, "n": 0, "stopped": False}
     base_usage = openrouter_usage(key) if a.provider == "openrouter" else None
@@ -393,6 +420,8 @@ def main(argv=None) -> int:
     p.add_argument("--headroom-per-session-usd", type=float, default=3.75,
                    help="OpenRouter credit required per concurrent session for in-flight holds")
     p.add_argument("--out", default="results/%s" % time.strftime("%Y-%m-%d"))
+    p.add_argument("--expect-root-digest", default=None,
+                   help="refuse to run unless --sota-root's root_digest() equals this (v16)")
     p.add_argument("--unsafe-local-scoring", action="store_true",
                    help="run hidden tests on this host when no container runtime exists")
     a = p.parse_args(argv)

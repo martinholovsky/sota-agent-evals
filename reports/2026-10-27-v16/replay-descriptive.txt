@@ -1,0 +1,22 @@
+######## results/v14-2026-10-13
+fingerprints: 4a5fee40 54347, origin/main 57984, shared 51125, union 61206
+fingerprint lines in all rules files: 54403 -> 58062 (x1.067)
+
+case  recorded  vs_a  vs_b  vs_union | files_read size_a size_b | hook_a hook_b real==replay_a shell  only_b
+
+totals: recorded 18615; re-scored vs 4a5fee40 18615, vs origin/main 17607 (94.6%), vs union 18615
+size only (same files read in full): 19491 -> 19662 fingerprint lines (x1.009)
+hook replay: files named 66 (4a5fee40) -> 66 (origin/main); replay matches the real hook in 20/20 runs; runs where today's hook names a file the old one did not: 0
+lines from sota-shell-scripting rules files (union fingerprints): 1420 of 18615 (7.6%)
+mean per run: recorded 930.8; size-only prediction 938.9
+######## results/v16-2026-10-27
+fingerprints: 4a5fee40 54347, origin/main 57984, shared 51125, union 61206
+fingerprint lines in all rules files: 54403 -> 58062 (x1.067)
+
+case  recorded  vs_a  vs_b  vs_union | files_read size_a size_b | hook_a hook_b real==replay_a shell  only_b
+
+totals: recorded 21086; re-scored vs 4a5fee40 19791, vs origin/main 21086 (106.5%), vs union 21086
+size only (same files read in full): 20015 -> 20195 fingerprint lines (x1.009)
+hook replay: files named 71 (4a5fee40) -> 71 (origin/main); replay matches the real hook in 20/20 runs; runs where today's hook names a file the old one did not: 0
+lines from sota-shell-scripting rules files (union fingerprints): 1090 of 21086 (5.2%)
+mean per run: recorded 1054.3; size-only prediction 1063.8
