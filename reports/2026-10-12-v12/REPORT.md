@@ -87,3 +87,5 @@ Read from the transcripts (`h/route.py`, descriptive):
 
 SDK estimate: $7.85 for the 20 runs (max $0.63 for one run), plus $0.52 for the gates and pilot. Credit
 left at 11:36: $8.96 (auto top-up on).
+
+**Root availability, 2026-10-28:** the treatment root `b098e3e` (PRE-REGISTRATION-v12.md: "not pushed") is now on GitHub as SOTA-skills branch `roadmap-73-links` (`b098e3e56cf6bb0b754d614e676d19faa0f36f33`), pushed so the run stays reproducible after local branch cleanup. Measurement only; not for merge.
