@@ -69,6 +69,10 @@ explained by file size, the CLAUDE.md block or the hook. It cannot be separated 
 (provider routing, served weights or sampling between 2026-10-13 and 2026-10-27), and one sample
 per case is lumpy: three cases account for most of the gain.
 
+**Operator decision, 2026-10-28: v16 is closed.** No second sample is run, and the INCONCLUSIVE
+verdict stands as v16's result. No reason was given beyond the decision itself. The $25 approval
+ends with this run; any further paid run needs a new approval and its own pre-registration.
+
 ## Budget
 
 Credit read before the gates: **$63.87** on the account (21:46Z, read twice; total credits
