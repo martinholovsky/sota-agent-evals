@@ -76,7 +76,7 @@ $1,175.00, usage $1,111.13). SDK estimate: gates $0.27, pilot $0.60, run $12.21,
 The key's usage counter, the spend of record, read **$10.84** above the pre-gate reading at 22:13Z;
 it lags, and the settled figure is recorded below when read hours later.
 
-Settled spend of record: *to be read and filled in hours after the run.*
+Settled spend of record: **$10.84** — the key counter read $705.706172642 at 22:13Z and again, unchanged, at 05:55Z on 2026-10-28 (7.7 hours later, read twice), against $694.869304842 before the gates. That is below the SDK estimate of $13.08; the two are reported side by side and not reconciled here (in v3 the SDK estimate ran 16% low, so neither direction is assumed).
 
 ## Deviations
 
