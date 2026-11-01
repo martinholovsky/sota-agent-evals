@@ -1,7 +1,7 @@
-# v17: narrowing the router's exits (ROADMAP 73 (k)), same-day A/B. DRAFT — not frozen
+# v17: narrowing the router's exits (ROADMAP 73 (k)), same-day A/B. FROZEN 2026-11-01, before any v17 run
 
-Status: **DRAFT for operator review, 2026-11-01.** It is frozen by the commit that replaces this
-line with "FROZEN <date>", before any v17 run. Nothing here has been run; no API spend so far.
+Status: **FROZEN 2026-11-01**, approved by the operator together with SOTA-skills #670's wording and
+the run itself, before any v17 run or API spend.
 
 ## Question
 
