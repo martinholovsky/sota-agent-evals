@@ -91,3 +91,16 @@ record is the SDK estimate, read again from the Anthropic console by the operato
 ## Deviations
 
 (None yet.)
+
+**D1 — 2026-11-01, before any spend.** The first `preflight` attempt failed on both runs with
+"Invalid API key" at $0.00; the key in `.env` was then confirmed rejected by Anthropic's
+`/v1/models` (HTTP 401). The operator replaced it; the new key returned HTTP 200 with
+`claude-sonnet-5-5` listed. Nothing in the design changed.
+
+**Outcome, recorded 2026-11-01.** Gates passed: preflight on both roots, sandbox probe (egress
+403, DNS blocked), pilot w09 on both arms (`hint_code` 6, `table_router` 1, pinned digests); gates
+and pilot $1.26 against the $2.50 stop. Run: 24/24 rows, no errors, each arm's rows carry its
+pinned digest. **Rule tests: control 12/20, treatment 12/20 — NULL** (difference 0.00 ≤ +0.05);
+identical in every one of the 12 cases. Spec 12/12 in both arms (no HARM). Secondary: 7 handed
+back and 1 claimed done in each arm (human and judge agree 16/16). Spend of record (SDK
+estimates) $8.30 of the $25 cap. Report: [reports/2026-11-01-v17](reports/2026-11-01-v17/REPORT.md).
