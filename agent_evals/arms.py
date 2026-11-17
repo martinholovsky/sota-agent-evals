@@ -44,6 +44,8 @@ class Arm:
     code_hook: bool = False    # scripts/code-rules-hook.py as a PostToolUse hook on Edit|Write|MultiEdit (v9)
     linked_table: bool = False  # that script's --table appended to the run's sota-python/SKILL.md (v9)
     pressure: bool = False     # the prompt ends with runner.PRESSURE, a competing user instruction (v15)
+    gate: str = ""            # scripts/completion-gate-hook.py on Stop: "shadow" records, "on" blocks once
+                               # (SOTA-skills ROADMAP 96; both arms run the same detector)
 
 
 ARMS = {
@@ -91,6 +93,10 @@ ARMS = {
     # hook, as the plugin registers both (and install.sh offers the hook with a default of yes). Same
     # install as `installed+apply`; the name says which root it needs, and cli refuses it on any other.
     "installed+table+code": Arm("installed+table+code", library=True, hook=False, routing=True, code_hook=True),
+    "installed+table+code+gate-shadow": Arm("installed+table+code+gate-shadow", library=True, hook=False,
+                                            routing=True, code_hook=True, gate="shadow"),
+    "installed+table+code+gate": Arm("installed+table+code+gate", library=True, hook=False,
+                                     routing=True, code_hook=True, gate="on"),
     # v15 (2026-10-17): v14's two arms with ONE sentence of ordinary competing pressure appended to
     # every case prompt (runner.PRESSURE). Every lift before 2026-09-01 was measured under a neutral
     # prompt; SOTA-skills' API harness found the lift grows under pressure (+0.509). Each runs from
@@ -163,6 +169,12 @@ def settings_for(arm: Arm, sota_root: Path) -> dict:
         s.setdefault("hooks", {}).setdefault("PostToolUse", []).append(
             {"matcher": "Edit|Write|MultiEdit",
              "hooks": [{"type": "command", "command": "python3 %s" % json.dumps(str(sota_root / "scripts" / "code-rules-hook.py"))}]})
+    if arm.gate:   # fails closed: a gate arm without its hook would measure the control arm twice
+        script = sota_root / "scripts" / "completion-gate-hook.py"
+        if arm.gate not in ("shadow", "on") or not script.is_file():
+            raise SystemExit("%s arm: gate=%r, or %s has no scripts/completion-gate-hook.py" % (arm.name, arm.gate, sota_root))
+        s.setdefault("hooks", {}).setdefault("Stop", []).append(
+            {"hooks": [{"type": "command", "command": "SOTA_COMPLETION_GATE=%s python3 %s" % (arm.gate, json.dumps(str(script)))}]})
     if arm.routing:
         hook_cmd, _block, frac = routing_layer(sota_root)
         s.setdefault("hooks", {})["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": hook_cmd}]}]

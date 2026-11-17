@@ -959,7 +959,23 @@ def _v9_root(fake_sota, tmp_path, table="## What your code does: the rules outsi
     (r / "skills" / "sota-python" / "SKILL.md").write_text("---\nname: sota-python\ndescription: x\n---\n# idx\n")
     (r / "scripts" / "code-rules-hook.py").write_text(
         "import sys\nif sys.argv[1:] == ['--table']:\n    sys.stdout.write(%r)\n" % table)
+    (r / "scripts" / "completion-gate-hook.py").write_text("import sys\n")
     return r
+
+
+@pytest.mark.parametrize("name,mode", [("installed+table+code+gate-shadow", "shadow"),
+                                       ("installed+table+code+gate", "on")])
+def test_gate_arms_register_the_stop_hook_in_their_mode_and_fail_closed(fake_sota, tmp_path, name, mode):
+    r = _v9_root(fake_sota, tmp_path)
+    s = A.settings_for(A.ARMS[name], r)
+    assert s["hooks"]["Stop"] == [{"hooks": [{"type": "command", "command": "SOTA_COMPLETION_GATE=%s python3 %s"
+                                              % (mode, json.dumps(str(r / "scripts" / "completion-gate-hook.py")))}]}]
+    # everything else identical to the control arm the gate is compared against
+    base = A.settings_for(A.ARMS["installed+table+code"], r)
+    assert {k: v for k, v in s["hooks"].items() if k != "Stop"} == base["hooks"]
+    (r / "scripts" / "completion-gate-hook.py").unlink()
+    with pytest.raises(SystemExit):
+        A.settings_for(A.ARMS[name], r)
 
 
 def test_code_arm_registers_the_hook_on_writes_and_fails_closed(fake_sota, tmp_path):
