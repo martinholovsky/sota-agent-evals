@@ -1,0 +1,41 @@
+{
+ "folder": "/Volumes/speedy/scratch/sota-trial/lib-1",
+ "hidden_seconds": 69.2,
+ "load_errors": [],
+ "test_spec": {
+  "passed": 30,
+  "total": 30,
+  "failing": {}
+ },
+ "test_rules": {
+  "passed": 18,
+  "total": 18,
+  "failing": {}
+ },
+ "own_tests": {
+  "exit": 0,
+  "summary": "Ran 96 tests in 10.239s | OK"
+ }
+}
+{
+ "folder": "/Volumes/speedy/scratch/sota-trial/bare-1",
+ "hidden_seconds": 20.2,
+ "load_errors": [],
+ "test_spec": {
+  "passed": 30,
+  "total": 30,
+  "failing": {}
+ },
+ "test_rules": {
+  "passed": 16,
+  "total": 18,
+  "failing": {
+   "test_login_brute_force_is_limited": "FAIL",
+   "test_webhook_retries_are_bounded": "FAIL"
+  }
+ },
+ "own_tests": {
+  "exit": 0,
+  "summary": "Ran 55 tests in 15.455s | OK"
+ }
+}
