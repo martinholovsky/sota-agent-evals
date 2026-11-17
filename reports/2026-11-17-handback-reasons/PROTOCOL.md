@@ -40,7 +40,11 @@ If DESIGN_DECISION or ELSEWHERE together exceed 50%, the gate must first separat
 decisions from delegated controls, and its sentinel tasks get priority. Anything else: report and
 stop.
 
-## Amendment 1 (2026-11-17, after reading 4 of the 30 sample items, before any judge ran)
+## Amendment 1 (2026-11-17, during author labelling of the 30 sample items, before any judge ran)
+
+NOT_NEEDED was added after the 4th sample item; the two clarifications below it after all 30 had
+been read. The author labels therefore applied the amended rubric; the judges get only the
+amended rubric.
 
 - **Added NOT_NEEDED**: the message judges the control unnecessary or harmful in this context
   (item 28: "I left out a compression-ratio cap because highly compressible … images").
