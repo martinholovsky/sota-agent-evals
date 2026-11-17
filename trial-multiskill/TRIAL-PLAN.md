@@ -32,3 +32,13 @@ arms may be dropped (operator, 2026-11-17).
 mechanism, not a significance claim. Validity: `verify.py` reference 30/30 + 18/18, naive 30/30 +
 0/18, deny-all 0/18 (re-run by the session, exit 0). Neither solution's Dockerfile was built and the
 tests ran on Python 3.14 only.
+
+**Config as measured before any run (each session's init message, 2026-11-17).**
+- `bare-cfg` at first login synced the operator's claude.ai-account plugin `sota-skills` (42 library
+  skills active), so the bare arm was NOT bare. `enabledPlugins` with `sota-skills@SOTA-skills` did not
+  turn it off (synced plugins are `<name>@synced`); `syncClaudeAiPlugins: false` and
+  `syncClaudeAiSkills: false` in `bare-cfg/settings.json` did: init then lists 19 skills, 0 library,
+  plugins only Claude Code's four built-ins.
+- The library arms (the operator's normal config) load the library TWICE: 42 skills from the synced
+  plugin plus 43 linked under `~/.claude/skills`, 131 skills in all. Kept as is: that is how the
+  operator works.
