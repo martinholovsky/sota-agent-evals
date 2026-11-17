@@ -150,7 +150,9 @@ def _base(arm) -> str:
     return arm.name[:-len("+pressure")] if arm.name.endswith("+pressure") else arm.name
 
 
-ROOT_DIGEST_FILES = ("scripts/code-rules-hook.py", "scripts/install.sh")
+# v18 adds the completion gate: a run must not use a different gate under the same digest. A root
+# without the file hashes as before (missing files are skipped), so v14-v17 digests still hold.
+ROOT_DIGEST_FILES = ("scripts/code-rules-hook.py", "scripts/install.sh", "scripts/completion-gate-hook.py")
 
 
 def root_digest(sota_root: Path) -> str:
