@@ -103,3 +103,15 @@ that the block reached the agent. No outcome, arm or threshold changes.
 
 `ROOT_DIGEST_FILES` now includes `scripts/completion-gate-hook.py`, so the pinned digest covers the gate
 itself; roots without the file hash as before.
+
+**D2 — 2026-11-17, after the pilot, before the main run.** The pilot's two runs (w20) both passed every
+hidden test and the gate never fired, so it could not show a block reaching the agent. And the runner
+kept only the LAST assistant text: a blocked message is replaced by the reply after the block, leaving
+no trace. Two changes, no outcome reads either: `Trace` now records every assistant text (`texts`) and
+every non-init system message (`system`); and a calibration (`tools/v18_gate_calibration.py`, arm B's
+exact configuration, a prompt that makes the agent end on "Your spec didn't set a size limit, so I
+didn't add one.", $0.16 for two runs) showed the gate block once, the agent receive the reason and
+answer it (it quoted the request's "Do not edit or create any files" as an explicit prohibition), and
+the second Stop allowed (`allow-repair-done` in the gate's own record). Claude Code reports a
+deliberate block as a `stop-hook-error` notification and a `hook_blocking_error` attachment; that is
+its label for `decision: block`, not a failure. Spend before the main run: $1.17.
