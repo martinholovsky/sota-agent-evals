@@ -91,7 +91,13 @@ Anthropic console.
 
 ## Deviations
 
-(None yet.)
+**D1 — 2026-11-17, before any spend.** Two gate checks above cannot run as written. (1) `preflight`
+ignores `--arms` (`agent_evals/cli.py:224`, a recorded TODO) and runs bare + library, so it checks isolation
+only; the gate is checked in the pilot. (2) The harness deletes each run's workspace after scoring, so
+the shadow arm's records under the workspace `.git` do not survive. The detector is a pure function of the
+final message, so arm A's "would block" is computed by replaying the frozen root's
+`spec_reason_sentences` on each recorded `final_text`; the pilot must instead show, in arm B's trace,
+that the block reached the agent. No outcome, arm or threshold changes.
 
 ## Harness change made before freezing
 
