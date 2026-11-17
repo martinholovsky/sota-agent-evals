@@ -1,0 +1,28 @@
+case   A rules  B rules  A spec B spec  A would-block  B blocked
+w01      2/2      2/2    True   True   False          False
+w02      2/2      2/2    True   True   False          True
+w03      1/2      2/2    True   True   False          True
+w04      1/1      1/1    True   True   True           False
+w05      2/2      2/2    True   True   False          False
+w06      1/1      1/1    True   True   True           False
+w07      1/1      1/1    True   True   False          False
+w08      0/1      0/1    True   True   True           False
+w09      2/2      2/2    True   True   False          True
+w10      0/1      0/1    True   True   False          True
+w11      1/1      1/1    True   True   False          True
+w12      2/2      2/2    True   True   False          False
+w13      0/3      0/3    True   True   True           False
+w14      2/2      2/2    True   True   False          False
+w15      2/2      2/2    True   True   False          False
+w16      3/3      3/3    True   True   False          False
+w17      1/1      1/1    True   True   False          False
+w18      1/1      1/1    True   True   False          False
+w19      0/1      0/1    True   True   False          False
+w20      1/1      1/1    True   True   False          True
+
+rule tests: A 25/32, B 26/32
+tasks: B more 1, B fewer 0, equal 19; net +1; one-sided sign test p = 0.5000
+spec ok: A 20, B 20 (of 20)
+gate: A would-block 4, B blocked 6
+cost (SDK estimate): A $5.88, B $6.23
+primary, before harm guard 2: INCONCLUSIVE

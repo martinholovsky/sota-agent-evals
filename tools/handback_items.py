@@ -19,6 +19,7 @@ import ast, glob, json, os, re, sys
 CASESET = {  # run-set prefix -> case set its tasks came from (checked below against test names)
     "v7": "cases-v4", "v8": "cases-v4", "v9": "cases-v4", "v10": "cases-v4", "v11": "cases-v4",
     "v12": "cases-v4", "v13": "cases-v4", "v14": "cases-v5", "v15": "cases-v5", "v16": "cases-v5",
+    "v18": "cases-v5",
 }
 
 

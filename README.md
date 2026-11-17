@@ -119,6 +119,10 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
 - **v3 measured 2026-10-08: 80/80 clean, ceiling (hidden_pass 1.00 in every arm), every
   comparison uninformative — and the library arms never invoked a skill (0 of 166 library-arm runs
   since v2)**; see [reports/2026-10-08-v3](reports/2026-10-08-v3/REPORT.md).
+- **v18 run 2026-11-17: INCONCLUSIVE, no harm** ([report](reports/2026-11-17-v18/REPORT.md), [pre-registration](PRE-REGISTRATION-v18.md)). The
+  completion gate (shadow vs on, cases-v5, 20 tasks): rule tests 25/32 → 26/32, one task up, none down, spec 20/20 both,
+  never-mentioned 2 → 1, +6% cost. Five of six blocks produced a code change; most built a control no hidden test checks,
+  and 3 of the control's 7 failures were controls the agent believed it built, which a decline-reading gate cannot see.
 - **2026-11-17, zero spend: why hand-backs happen** ([report](reports/2026-11-17-handback-reasons/REPORT.md)). Of the
   131 library hand-backs, 48% give the request as the reason, 22% another layer, 15% a design decision, 3% a
   missing number (pre-registered rule, four blind judges, 29/30 agreement with a seeded sample). That selected
