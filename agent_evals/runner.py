@@ -40,6 +40,11 @@ class Trace:
     init: dict = field(default_factory=dict)
     tool_calls: list = field(default_factory=list)     # {id,name,input,is_error,result}
     final_text: str = ""
+    # v18: every assistant text in order, and every non-init system message. A Stop-hook block makes
+    # the agent write a second final message, which replaced the first in `final_text`, so a block
+    # left no trace. Recording only: no outcome reads these.
+    texts: list = field(default_factory=list)
+    system: list = field(default_factory=list)
     result: dict = field(default_factory=dict)
     error: str | None = None
     wall_s: float = 0.0
@@ -105,6 +110,8 @@ async def run_one(arm: Arm, case: Case, sample: int, cfg: RunConfig, api_key: st
         async for msg in query(prompt=prompt, options=ClaudeAgentOptions(**kwargs)):
             if isinstance(msg, SystemMessage) and msg.subtype == "init":
                 tr.init = dict(msg.data)
+            elif isinstance(msg, SystemMessage):
+                tr.system.append({"subtype": msg.subtype, "data": str(getattr(msg, "data", ""))[:1500]})
             elif isinstance(msg, AssistantMessage):
                 for b in msg.content:
                     if isinstance(b, ToolUseBlock):
@@ -114,6 +121,7 @@ async def run_one(arm: Arm, case: Case, sample: int, cfg: RunConfig, api_key: st
                         tr.tool_calls.append(call)
                     elif isinstance(b, TextBlock):
                         tr.final_text = b.text
+                        tr.texts.append(b.text)
             elif isinstance(msg, UserMessage) and isinstance(msg.content, list):
                 for b in msg.content:
                     if isinstance(b, ToolResultBlock) and b.tool_use_id in by_id:
