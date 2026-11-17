@@ -39,3 +39,15 @@ spec-silence as a reason). If VALUE_CHOICE is largest, the next step is defaults
 If DESIGN_DECISION or ELSEWHERE together exceed 50%, the gate must first separate principle-2
 decisions from delegated controls, and its sentinel tasks get priority. Anything else: report and
 stop.
+
+## Amendment 1 (2026-11-17, after reading 4 of the 30 sample items, before any judge ran)
+
+- **Added NOT_NEEDED**: the message judges the control unnecessary or harmful in this context
+  (item 28: "I left out a compression-ratio cap because highly compressible … images").
+  No existing category held it.
+- **A trailing offer is not a request to choose.** "Say if you want it", "let me know and I'll
+  add it" follow almost every hand-back; they do not make the reason VALUE_CHOICE or
+  DESIGN_DECISION. Label the reason the message gives for not building it. Only an explicit
+  request for the user's decision AS the reason ("you should decide", "I need your threshold")
+  counts as VALUE_CHOICE / DESIGN_DECISION.
+- **ELSEWHERE includes "this repo has no transport/HTTP layer, so it belongs at the gateway".**
