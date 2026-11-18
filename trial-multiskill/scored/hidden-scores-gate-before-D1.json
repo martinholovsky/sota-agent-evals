@@ -1,0 +1,86 @@
+{
+ "folder": "/Volumes/speedy/scratch/sota-trial/gate-1",
+ "hidden_seconds": 43.1,
+ "load_errors": [],
+ "test_spec": {
+  "passed": 30,
+  "total": 30,
+  "failing": {}
+ },
+ "test_rules": {
+  "passed": 17,
+  "total": 18,
+  "failing": {
+   "test_security_events_logged_without_secrets": "FAIL"
+  }
+ },
+ "own_tests": {
+  "exit": 0,
+  "summary": "Ran 88 tests in 22.819s | OK"
+ }
+}
+{
+ "folder": "/Volumes/speedy/scratch/sota-trial/gate-2",
+ "hidden_seconds": 1.5,
+ "load_errors": [],
+ "test_spec": {
+  "passed": 4,
+  "total": 30,
+  "failing": {
+   "test_activity_logged_for_upload": "ERROR",
+   "test_authenticated_routes_require_token": "ERROR",
+   "test_cli_creates_tenant_and_user_who_can_log_in": "FAIL",
+   "test_colleague_can_download_by_id": "ERROR",
+   "test_csv_export_for_admin": "ERROR",
+   "test_csv_export_member_403": "ERROR",
+   "test_error_body_is_json": "ERROR",
+   "test_exception_from_http_post_is_retried": "ERROR",
+   "test_failed_delivery_is_retried_then_stops_on_success": "ERROR",
+   "test_list_is_per_tenant": "ERROR",
+   "test_login_success_returns_token_and_role": "ERROR",
+   "test_login_unknown_user_401": "ERROR",
+   "test_login_wrong_password_401": "ERROR",
+   "test_logout_returns_204": "ERROR",
+   "test_no_webhook_no_delivery": "ERROR",
+   "test_password_change": "ERROR",
+   "test_search_filter": "ERROR",
+   "test_share_link_opened_by_colleague": "ERROR",
+   "test_unknown_document_404": "ERROR",
+   "test_unknown_route_404_and_wrong_method_405": "ERROR",
+   "test_unknown_share_404": "ERROR",
+   "test_upload_list_download_roundtrip": "ERROR",
+   "test_upload_missing_filename_400": "ERROR",
+   "test_webhook_cleared": "ERROR",
+   "test_webhook_delivered_on_upload": "ERROR",
+   "test_webhook_set_member_403": "ERROR"
+  }
+ },
+ "test_rules": {
+  "passed": 0,
+  "total": 18,
+  "failing": {
+   "test_concurrent_workers_do_not_duplicate_a_delivery": "ERROR",
+   "test_cross_tenant_document_download_denied": "ERROR",
+   "test_cross_tenant_share_link_denied": "ERROR",
+   "test_csv_export_neutralises_formulas": "ERROR",
+   "test_errors_do_not_crash_or_leak_internals": "ERROR",
+   "test_filename_cannot_escape_storage_or_inject_headers": "ERROR",
+   "test_login_brute_force_is_limited": "ERROR",
+   "test_logout_invalidates_token": "ERROR",
+   "test_oversized_upload_refused": "ERROR",
+   "test_password_change_ends_other_sessions": "ERROR",
+   "test_password_hashing_is_deliberately_slow": "ERROR",
+   "test_passwords_not_stored_plaintext_or_unsalted": "ERROR",
+   "test_search_parameter_is_not_sql_injectable": "ERROR",
+   "test_security_events_logged_without_secrets": "ERROR",
+   "test_session_expires": "ERROR",
+   "test_webhook_destination_rechecked_at_delivery": "ERROR",
+   "test_webhook_retries_are_bounded": "ERROR",
+   "test_webhook_ssrf_to_internal_addresses_refused": "ERROR"
+  }
+ },
+ "own_tests": {
+  "exit": 0,
+  "summary": "Ran 62 tests in 6.532s | OK"
+ }
+}

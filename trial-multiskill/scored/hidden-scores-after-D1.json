@@ -1,0 +1,83 @@
+{
+ "folder": "/Volumes/speedy/scratch/sota-trial/lib-1",
+ "hidden_seconds": 68.7,
+ "load_errors": [],
+ "test_spec": {
+  "passed": 30,
+  "total": 30,
+  "failing": {}
+ },
+ "test_rules": {
+  "passed": 18,
+  "total": 18,
+  "failing": {}
+ },
+ "own_tests": {
+  "exit": 0,
+  "summary": "Ran 96 tests in 9.331s | OK"
+ }
+}
+{
+ "folder": "/Volumes/speedy/scratch/sota-trial/bare-1",
+ "hidden_seconds": 18.6,
+ "load_errors": [],
+ "test_spec": {
+  "passed": 30,
+  "total": 30,
+  "failing": {}
+ },
+ "test_rules": {
+  "passed": 16,
+  "total": 18,
+  "failing": {
+   "test_login_brute_force_is_limited": "FAIL",
+   "test_webhook_retries_are_bounded": "FAIL"
+  }
+ },
+ "own_tests": {
+  "exit": 0,
+  "summary": "Ran 55 tests in 15.630s | OK"
+ }
+}
+{
+ "folder": "/Volumes/speedy/scratch/sota-trial/gate-1",
+ "hidden_seconds": 43.0,
+ "load_errors": [],
+ "test_spec": {
+  "passed": 30,
+  "total": 30,
+  "failing": {}
+ },
+ "test_rules": {
+  "passed": 17,
+  "total": 18,
+  "failing": {
+   "test_security_events_logged_without_secrets": "FAIL"
+  }
+ },
+ "own_tests": {
+  "exit": 0,
+  "summary": "Ran 88 tests in 23.753s | OK"
+ }
+}
+{
+ "folder": "/Volumes/speedy/scratch/sota-trial/gate-2",
+ "hidden_seconds": 70.3,
+ "load_errors": [],
+ "test_spec": {
+  "passed": 30,
+  "total": 30,
+  "failing": {}
+ },
+ "test_rules": {
+  "passed": 17,
+  "total": 18,
+  "failing": {
+   "test_security_events_logged_without_secrets": "FAIL"
+  }
+ },
+ "own_tests": {
+  "exit": 0,
+  "summary": "Ran 62 tests in 6.679s | OK"
+ }
+}

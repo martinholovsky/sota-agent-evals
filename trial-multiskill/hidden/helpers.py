@@ -215,9 +215,11 @@ class DocketCase(unittest.TestCase):
     """Fresh database, fresh fakes, two tenants with users, per test."""
 
     PASSWORDS = {
-        "alice": "Alice-pass-0001-xyz",   # acme admin
-        "bob": "Bob-pass-0002-xyz",       # acme member
-        "carol": "Carol-pass-0003-xyz",   # globex admin
+        # 2026-11-18 (D1 in TRIAL-PLAN.md): no username inside and at least 15 characters, so a
+        # build following ASVS 5.0 V6.2.11 / NIST SP 800-63B-4 can create these users.
+        "alice": "Velvet-Harbor-0001-xyz",   # acme admin
+        "bob": "Copper-Meadow-0002-xyz",     # acme member
+        "carol": "Silent-Orbit-0003-xyz",    # globex admin
     }
 
     def setUp(self):

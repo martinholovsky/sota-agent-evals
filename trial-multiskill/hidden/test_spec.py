@@ -267,12 +267,12 @@ class MigrationAndCliSpec(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         r = self._cli("create-tenant", "initech")
         self.assertEqual(r.returncode, 0, r.stderr)
-        r = self._cli("create-user", "initech", "peter", "--admin", stdin="Peter-Pass-9-xyz\n")
+        r = self._cli("create-user", "initech", "peter", "--admin", stdin="Quiet-Lantern-9-xyz\n")
         self.assertEqual(r.returncode, 0, r.stderr)
         from docket.app import create_app
         app = create_app(self.db, clock=FakeClock(), http_post=FakeHTTP(), resolve=FakeResolver())
         resp = call_wsgi(app, "POST", "/login",
-                         json_body={"tenant": "initech", "username": "peter", "password": "Peter-Pass-9-xyz"})
+                         json_body={"tenant": "initech", "username": "peter", "password": "Quiet-Lantern-9-xyz"})
         self.assertEqual(resp.status, 200, resp)
         self.assertEqual(resp.json()["role"], "admin")
 
