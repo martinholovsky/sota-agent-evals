@@ -1,5 +1,5 @@
 {
- "folder": "/Volumes/speedy/scratch/sota-trial/gate-1",
+ "folder": "<trial>/gate-1",
  "hidden_seconds": 43.1,
  "load_errors": [],
  "test_spec": {
@@ -20,7 +20,7 @@
  }
 }
 {
- "folder": "/Volumes/speedy/scratch/sota-trial/gate-2",
+ "folder": "<trial>/gate-2",
  "hidden_seconds": 1.5,
  "load_errors": [],
  "test_spec": {

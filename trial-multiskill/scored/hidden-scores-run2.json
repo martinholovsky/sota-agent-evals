@@ -1,5 +1,5 @@
 {
- "folder": "/Volumes/speedy/scratch/sota-trial/lib-2",
+ "folder": "<trial>/lib-2",
  "hidden_seconds": 70.5,
  "load_errors": [],
  "test_spec": {
@@ -18,7 +18,7 @@
  }
 }
 {
- "folder": "/Volumes/speedy/scratch/sota-trial/bare-2",
+ "folder": "<trial>/bare-2",
  "hidden_seconds": 71.6,
  "load_errors": [],
  "test_spec": {

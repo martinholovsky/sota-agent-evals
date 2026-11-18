@@ -1,5 +1,5 @@
 {
- "folder": "/Volumes/speedy/scratch/sota-trial/lib-1",
+ "folder": "<trial>/lib-1",
  "hidden_seconds": 68.7,
  "load_errors": [],
  "test_spec": {
@@ -18,7 +18,7 @@
  }
 }
 {
- "folder": "/Volumes/speedy/scratch/sota-trial/bare-1",
+ "folder": "<trial>/bare-1",
  "hidden_seconds": 18.6,
  "load_errors": [],
  "test_spec": {
@@ -40,7 +40,7 @@
  }
 }
 {
- "folder": "/Volumes/speedy/scratch/sota-trial/gate-1",
+ "folder": "<trial>/gate-1",
  "hidden_seconds": 43.0,
  "load_errors": [],
  "test_spec": {
@@ -61,7 +61,7 @@
  }
 }
 {
- "folder": "/Volumes/speedy/scratch/sota-trial/gate-2",
+ "folder": "<trial>/gate-2",
  "hidden_seconds": 70.3,
  "load_errors": [],
  "test_spec": {

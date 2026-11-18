@@ -8,7 +8,7 @@ needing one or two skills. This task needs routing across many domains (authn/se
 uploads, SSRF, webhooks and retries, CSV, SQL, logging, migrations, CLI, Dockerfile, CI).
 
 **Arms** — the operator runs each session interactively on their own subscription, from an empty
-git folder under `/Volumes/speedy/scratch/sota-trial/`, model `claude-opus-5-5`, `--permission-mode auto`:
+git folder under `<trial>/`, model `claude-opus-5-5`, `--permission-mode auto`:
 
 | arm | folders | configuration |
 |---|---|---|

@@ -12,3 +12,7 @@ Scope: each build's `docket/`, Dockerfile and workflows; tests excluded.
 No real security vulnerability from any tool in either build. The archived rule set is not a usable
 source: it misses a real finding the current packs catch and adds false ones. Opengrep's own skill
 points at the registry packs (`--config p/...`).
+
+**Note 2026-11-18 (session close):** `dependabot-missing-cooldown` overstates lib-1's config: GitHub's Dependabot
+options reference (read 2026-11-18) applies a 3-day cooldown to version updates when none is configured.
+lib-1 had 3 days, not none; the library recommends 5.
