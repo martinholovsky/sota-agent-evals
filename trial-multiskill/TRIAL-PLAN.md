@@ -42,3 +42,22 @@ tests ran on Python 3.14 only.
 - The library arms (the operator's normal config) load the library TWICE: 42 skills from the synced
   plugin plus 43 linked under `~/.claude/skills`, 131 skills in all. Kept as is: that is how the
   operator works.
+
+**D1 — 2026-11-18, after gate-1/gate-2 were scored, applied to all four runs.** gate-2 scored spec
+4/30 and rules 0/18 because it rejects a password that contains the username (ASVS 5.0 V6.2.11; the
+ticket sets no password policy), and the fixtures created `alice` with `Alice-pass-0001-xyz`: the
+test setup failed, not the features. Changed only the passwords the tests CREATE and that break a
+standards-backed rule (the three fixture users and the CLI's `peter`); every one is now over 15
+characters with no username inside. `verify.py` re-run: reference 30/30 + 18/18, naive 30/30 + 0/18,
+deny-all 0/18 (exit 0). Scores, all with the corrected fixtures: lib-1 30 + 18, bare-1 30 + 16,
+gate-1 30 + 17, gate-2 30 + 17 (lib-1 and bare-1 unchanged by D1). Pre-D1 gate scores kept in
+`scored/hidden-scores-gate-before-D1.json`.
+
+**Not changed, reported both ways:** both gate runs fail `test_security_events_logged_without_secrets`
+because their failed-login record identifies the account by a hashed tag (gate-1) or user id
+(gate-2), not the literal username the test looks for. ASVS V16.3.1 requires the event, not the raw
+name. Strict (as frozen): 17/18 each. Read as "account identifiable": 18/18 each.
+
+**The gate never fired** (one `allow` record per run, no request-reason decline in either final
+message), so on this task the gate arm is the library arm.
+
