@@ -61,3 +61,28 @@ name. Strict (as frozen): 17/18 each. Read as "account identifiable": 18/18 each
 **The gate never fired** (one `allow` record per run, no request-reason decline in either final
 message), so on this task the gate arm is the library arm.
 
+## Results, all six runs (2026-11-18; hidden tests after D1; checklist by blind reviewers, one per pair)
+
+| run | arm | spec /30 | rule /18 | checklist /15 | session | rule tests failed |
+|---|---|---|---|---|---|---|
+| lib-1 | library | 30 | 18 | 14 | 25 min, 81 tool calls | — |
+| lib-2 | library | 30 | 18 | 15 | 16 min, 44 | — |
+| gate-1 | library + gate (never fired) | 30 | 17* | 14 | 21 min, 60 | security-event log names the account by a hashed tag |
+| gate-2 | library + gate (never fired) | 30 | 17* | 15 | 20 min, 64 | security-event log names the account by user id |
+| bare-1 | no library | 30 | 16 | 13 | 12 min, 17 | login brute force, webhook retries never end |
+| bare-2 | no library | 30 | 16 | 13 | ~4 min, 11 (6 of 222 transcript lines unparseable) | the same two |
+
+\* 18/18 if any stable account identifier counts (see D1 note above).
+
+Library runs (4): 70/72 rule tests (72/72 under the identifier reading), checklist 58/60. No-library runs (2):
+32/36, checklist 26/30. Both bare runs failed the SAME two rule tests and the SAME two checklist items
+(base image and actions unpinned). No session asked the operator a question; every run had one human
+message (the prompt). The library's checkout moved twice during the trial (2026-11-18 11:22 and
+12:49), documentation only: no file under skills/, hooks/, the code-rules hook or install.sh changed.
+
+**What the library did not prevent (all four library runs):** a reverse proxy recommended in the docs
+while per-IP login limits default to the socket peer (lib-1 no proxy support; gate-1, gate-2, lib-2 an
+opt-in trusted-proxy setting the shipped container does not set); account lockout before the password
+check (anyone knowing a username can lock it). The first is the gap fixed on SOTA-skills
+`review-fixes-2026-11-17` after run 1; these runs used the library before that fix.
+
