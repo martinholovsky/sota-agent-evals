@@ -1,0 +1,4 @@
+[
+  {"test": "test_four_digit_pin_signs_up", "asvs": "SENTINEL-s03"},
+  {"test": "test_visitor_signs_in_again_with_the_pin", "asvs": "SENTINEL-s03"}
+]
