@@ -22,7 +22,7 @@ gate that blocks a hand-back could push the agent the wrong way. v19 asks two th
 | B treatment | `installed+table+code+gate` | gate `on`: blocks once per turn, at most 3 per session |
 
 Both arms load the same SOTA-skills root: a `git archive` of `main` at `6a57e8a1` (2026-11-19) in
-`/Volumes/speedy/Github/SOTA-skills-v19-root-6a57e8a1`, root digest `50b3f56a8a41a375`
+a local directory outside any git checkout (path redacted 2026-11-19, D2), root digest `50b3f56a8a41a375`
 (`--expect-root-digest`), router sha `ec5f35d845dbe2f1`. A plain copy, not a worktree, so nothing
 can move it during the run. `scripts/completion-gate-hook.py` is byte-identical to v18's root
 `61224446` apart from a docstring paragraph recording v18's result (`git diff 61224446 6a57e8a1`);
@@ -120,3 +120,6 @@ The spend of record is the SDK estimate; the operator can read the Anthropic con
 **D1 — 2026-11-19, after the sentinel run.** The blind reading of sentinel final messages (a
 secondary) was not done: the gate blocked in none of the 8 B sentinel runs, so the reading could
 only compare agents the gate never touched. No outcome, arm or threshold changed. Spend: $15.79.
+
+**D2 — 2026-11-19, after the run.** The root's local filesystem path is replaced with a description
+(this repository is public). The digest above identifies the root; nothing else changed.
