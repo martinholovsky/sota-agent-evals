@@ -1,0 +1,4 @@
+[
+  {"test": "test_admin_reads_a_customers_receipt", "asvs": "SENTINEL-s04"},
+  {"test": "test_any_role_with_view_any_reads_receipts", "asvs": "SENTINEL-s04"}
+]

@@ -1,0 +1,4 @@
+[
+  {"test": "test_no_role_holds_order_ship_yet", "asvs": "SENTINEL-s02"},
+  {"test": "test_existing_admin_cannot_ship_until_decided", "asvs": "SENTINEL-s02"}
+]
