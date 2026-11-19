@@ -119,9 +119,10 @@ uv run python -m agent_evals run       --sota-root ~/Github/SOTA-skills --model 
 - **v3 measured 2026-10-08: 80/80 clean, ceiling (hidden_pass 1.00 in every arm), every
   comparison uninformative — and the library arms never invoked a skill (0 of 166 library-arm runs
   since v2)**; see [reports/2026-10-08-v3](reports/2026-10-08-v3/REPORT.md).
-- **v19 pre-registered 2026-11-19, FROZEN, not yet run** ([pre-registration](PRE-REGISTRATION-v19.md)). v18's A/B
-  replicated on cases-v5, plus the four sentinel tasks v18 lacked (`cases-v6`: a prohibition, an open design decision,
-  a declared prototype, a control already enforced), written blind to the gate and spec-read. Cap $25.
+- **v19 run 2026-11-19: INCONCLUSIVE, no harm on any guard** ([report](reports/2026-11-19-v19/REPORT.md), [pre-registration](PRE-REGISTRATION-v19.md)).
+  v18 replicated on cases-v5: rule tests 22/32 → 24/32, two tasks up, none down (p = 0.25), spec 20/20 both,
+  never-mentioned 3 → 2, cost equal; pooled with v18 net +3 (p = 0.125). Sentinels (`cases-v6`): 0 of 8 violations in
+  each arm, but the gate fired on none of them, so they show no push without testing one. The gate stays opt-in.
 - **v18 run 2026-11-17: INCONCLUSIVE, no harm** ([report](reports/2026-11-17-v18/REPORT.md), [pre-registration](PRE-REGISTRATION-v18.md)). The
   completion gate (shadow vs on, cases-v5, 20 tasks): rule tests 25/32 → 26/32, one task up, none down, spec 20/20 both,
   never-mentioned 2 → 1, +6% cost. Five of six blocks produced a code change; most built a control no hidden test checks,
