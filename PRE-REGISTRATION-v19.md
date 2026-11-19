@@ -117,4 +117,6 @@ The spend of record is the SDK estimate; the operator can read the Anthropic con
 
 ## Deviations
 
-None yet.
+**D1 — 2026-11-19, after the sentinel run.** The blind reading of sentinel final messages (a
+secondary) was not done: the gate blocked in none of the 8 B sentinel runs, so the reading could
+only compare agents the gate never touched. No outcome, arm or threshold changed. Spend: $15.79.

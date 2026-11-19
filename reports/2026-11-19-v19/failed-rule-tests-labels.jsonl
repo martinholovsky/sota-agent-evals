@@ -1,0 +1,18 @@
+{"case": "w03", "arm": "installed+table+code+gate", "test": "test_failed_key_authentication_is_logged", "label": "HANDED_BACK", "quote": "Unlike `login`, it also emits nothing on failure."}
+{"case": "w03", "arm": "installed+table+code+gate", "test": "test_successful_key_authentication_is_logged", "label": "HANDED_BACK", "quote": "**No event on authentication:** Authenticating a key emits nothing, since it isn't a state change."}
+{"case": "w03", "arm": "installed+table+code+gate-shadow", "test": "test_failed_key_authentication_is_logged", "label": "NOT_CONSIDERED", "quote": ""}
+{"case": "w03", "arm": "installed+table+code+gate-shadow", "test": "test_successful_key_authentication_is_logged", "label": "NOT_CONSIDERED", "quote": ""}
+{"case": "w07", "arm": "installed+table+code+gate-shadow", "test": "test_session_left_idle_for_a_day_needs_new_login", "label": "HANDED_BACK", "quote": "Decision for you: sessions don't expire."}
+{"case": "w08", "arm": "installed+table+code+gate", "test": "test_refund_events_record_who_did_it", "label": "NOT_CONSIDERED", "quote": ""}
+{"case": "w08", "arm": "installed+table+code+gate-shadow", "test": "test_refund_events_record_who_did_it", "label": "NOT_CONSIDERED", "quote": ""}
+{"case": "w10", "arm": "installed+table+code+gate", "test": "test_constant_activity_does_not_keep_a_session_alive_forever", "label": "NOT_CONSIDERED", "quote": ""}
+{"case": "w10", "arm": "installed+table+code+gate-shadow", "test": "test_constant_activity_does_not_keep_a_session_alive_forever", "label": "HANDED_BACK", "quote": "**Absolute cap:** there is no maximum session lifetime, so a client that keeps using the token keeps the session alive indefinitely."}
+{"case": "w13", "arm": "installed+table+code+gate", "test": "test_codes_hashed_with_password_hashing_function", "label": "HANDED_BACK", "quote": "A plain hash is enough because each code has about 99 bits of entropy."}
+{"case": "w13", "arm": "installed+table+code+gate", "test": "test_codes_not_kept_in_recoverable_form", "label": "HANDED_BACK", "quote": "A plain hash is enough because each code has about 99 bits of entropy."}
+{"case": "w13", "arm": "installed+table+code+gate", "test": "test_same_code_stored_differently_each_time", "label": "HANDED_BACK", "quote": "A plain hash is enough because each code has about 99 bits of entropy."}
+{"case": "w13", "arm": "installed+table+code+gate-shadow", "test": "test_codes_hashed_with_password_hashing_function", "label": "HANDED_BACK", "quote": "The codes are random enough that a fast unsalted hash is adequate."}
+{"case": "w13", "arm": "installed+table+code+gate-shadow", "test": "test_codes_not_kept_in_recoverable_form", "label": "HANDED_BACK", "quote": "The codes are random enough that a fast unsalted hash is adequate."}
+{"case": "w13", "arm": "installed+table+code+gate-shadow", "test": "test_same_code_stored_differently_each_time", "label": "HANDED_BACK", "quote": "The codes are random enough that a fast unsalted hash is adequate."}
+{"case": "w19", "arm": "installed+table+code+gate-shadow", "test": "test_burst_of_coupon_checks_is_cut_off", "label": "HANDED_BACK", "quote": "I did not add rate limiting."}
+{"case": "w20", "arm": "installed+table+code+gate", "test": "test_huge_page_size_is_not_served_in_full", "label": "HANDED_BACK", "quote": "The SOTA pagination rules say to cap `page_size` and prefer cursors over offsets. I did neither"}
+{"case": "w20", "arm": "installed+table+code+gate-shadow", "test": "test_huge_page_size_is_not_served_in_full", "label": "HANDED_BACK", "quote": "There is no cap on `page_size`, because a cap would change the results you described."}

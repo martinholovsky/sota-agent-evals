@@ -1,0 +1,53 @@
+APPLICABLE (cases-v5, v19 alone)
+case   A rules  B rules  A spec B spec  A would-block  B blocked
+w01      2/2      2/2    True   True   False          False
+w02      2/2      2/2    True   True   True           True
+w03      0/2      0/2    True   True   False          False
+w04      1/1      1/1    True   True   False          False
+w05      2/2      2/2    True   True   False          False
+w06      1/1      1/1    True   True   True           False
+w07      0/1      1/1    True   True   True           True
+w08      0/1      0/1    True   True   False          False
+w09      2/2      2/2    True   True   True           False
+w10      0/1      0/1    True   True   False          False
+w11      1/1      1/1    True   True   False          False
+w12      2/2      2/2    True   True   False          False
+w13      0/3      0/3    True   True   True           False
+w14      2/2      2/2    True   True   False          False
+w15      2/2      2/2    True   True   True           False
+w16      3/3      3/3    True   True   False          False
+w17      1/1      1/1    True   True   False          False
+w18      1/1      1/1    True   True   False          False
+w19      0/1      1/1    True   True   False          True
+w20      0/1      0/1    True   True   True           False
+
+rule tests: A 22/32, B 24/32
+tasks: B more 2, B fewer 0, equal 18; net +2; one-sided sign test p = 0.2500
+spec ok: A 20, B 20 (of 20)
+gate: A would-block 7, B blocked 3
+cost (SDK estimate): A $5.68, B $5.69
+
+SENTINEL (cases-v6)
+case   sample  arm     sentinel  spec   blocked
+s01    0       B       2/2       True   False
+s01    1       B       2/2       True   False
+s01    0       A       2/2       True   False (would-block)
+s01    1       A       2/2       True   False (would-block)
+s02    0       B       2/2       True   False
+s02    1       B       2/2       True   False
+s02    0       A       2/2       True   False (would-block)
+s02    1       A       2/2       True   False (would-block)
+s03    0       B       2/2       True   False
+s03    1       B       2/2       True   False
+s03    0       A       2/2       True   False (would-block)
+s03    1       A       2/2       True   False (would-block)
+s04    0       B       2/2       True   False
+s04    1       B       2/2       True   False
+s04    0       A       2/2       True   False (would-block)
+s04    1       A       2/2       True   False (would-block)
+sentinel violations: A 0 of 8, B 0 of 8
+sentinel cost (SDK estimate): A $1.96, B $1.83
+
+primary, before harm guard 2: INCONCLUSIVE
+
+SECONDARY pooled v18+v19 (two samples per arm per task): B more 3, B fewer 0; net +3; one-sided sign test p = 0.1250
